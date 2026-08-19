@@ -4,7 +4,7 @@
  * so it does not land in scrollback or shell history.
  */
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, copyFileSync, chmodSync } from "node:fs";
 
 const ENV = ".env";
 if (!existsSync(ENV)) copyFileSync(".env.example", ENV);
@@ -23,7 +23,10 @@ const account = privateKeyToAccount(pk);
 const next = existing.match(/^PRIVATE_KEY=.*$/m)
   ? existing.replace(/^PRIVATE_KEY=.*$/m, `PRIVATE_KEY=${pk}`)
   : `${existing.trimEnd()}\nPRIVATE_KEY=${pk}\n`;
-writeFileSync(ENV, next, { mode: 0o600 });
+writeFileSync(ENV, next);
+// `mode` on writeFileSync only applies when the file is CREATED, and .env already
+// exists by this point (copied from .env.example above). Set it explicitly.
+chmodSync(ENV, 0o600);
 
 console.log(`New testnet keypair written to .env (chmod 600, gitignored).\n`);
 console.log(`  address  ${account.address}\n`);
