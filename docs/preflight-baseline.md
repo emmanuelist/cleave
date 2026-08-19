@@ -65,3 +65,59 @@ has been run:
 - [ ] mint-on-cross observed between two opposite-side buyers — **the thesis**
 - [ ] `maybeClaim` sweeping a settled market
 - [ ] behaviour across a rollover to a successor market
+
+---
+
+# Spread survey — 2026-08-19, later same day
+
+`npm run spread`. Eight live markets, all two-sided. This is the number the whole
+thesis rests on, so it is measured rather than assumed.
+
+```
+market                bid     ask   spread   depth
+BTC-0-19AUG26-1500  0.517   0.547   3.00pp     3/3
+ETH-0-19AUG26-1415  0.517   0.547   3.00pp     2/3
+BTC-0-19AUG26-1415  0.553   0.582   2.90pp     3/3
+ETH-0-19AUG26-1500  0.500   0.530   3.00pp     3/3
+ETH-0-19AUG26-1600  0.758   0.784   2.60pp     3/3
+BTC-0-19AUG26-1600  0.890   0.912   2.20pp     3/3
+ETH-0-20AUG26       0.682   0.710   2.80pp     4/3
+BTC-0-20AUG26       0.621   0.650   2.90pp     4/3
+
+median 2.90pp   mean 2.80pp   min 2.20pp   max 3.00pp
+8/8 markets have >1pp of room to quote inside.
+```
+
+## The read: this is one bot, not a market
+
+Spreads cluster in a 0.8pp band (2.2–3.0) across eight independent markets on two
+different underlyings at four different expiries, with near-identical depth (3
+levels a side, uniform size). Organic order flow does not look like that.
+
+That pattern is a **single automated quoter posting fixed-width, fixed-size
+two-sided quotes** — almost certainly the venue's own seeding bot, or one
+entrant's `ec-maker` left running. Which means:
+
+- The incumbent is **not adaptive**. It is not going to tighten in response to us.
+  A quote posted one tick inside it wins the queue and keeps winning it.
+- There is essentially **no competition for the spread** right now. The 2.9pp is
+  not compensation for risk anyone is actively pricing — it is just unoccupied.
+- Corollary: our numbers during the hackathon will look better than they would in
+  a real market. Say so in the README rather than letting a judge infer we did
+  not notice.
+
+## The invariant holds exactly
+
+```
+BTC-0-19AUG26-1500#YES   bid 0.517   ask 0.547
+BTC-0-19AUG26-1500#NO    bid 0.453   ask 0.483
+1 − Up(ask) = 0.453   vs   Down(bid) = 0.453   residual 0.00pp
+```
+
+Zero residual. Up and Down really are one book, exactly mirrored.
+
+**This simplifies the build considerably.** We do not manage two books, two
+inventories, or a hedge between them. Posting a bid and an ask on the Up book
+*is* quoting both sides — and because the pool mints the pair when they cross,
+neither leg needs inventory behind it. The product is one book, two resting
+orders, and no position.

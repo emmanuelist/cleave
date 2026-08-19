@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Quote both sides of a prediction market while holding neither.",
   "scripts": {
+    "newkey": "tsx scripts/newkey.ts",
+    "fund": "tsx scripts/fund.ts",
     "preflight": "tsx scripts/preflight.ts",
+    "spread": "tsx scripts/spread.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
