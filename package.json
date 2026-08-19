@@ -1,0 +1,21 @@
+{
+  "name": "cleave",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Quote both sides of a prediction market while holding neither.",
+  "scripts": {
+    "preflight": "tsx scripts/preflight.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@somnia-chain/markets-sdk": "0.27.0",
+    "@somnia-chain/reactivity": "^0.2.1",
+    "viem": "^2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}
