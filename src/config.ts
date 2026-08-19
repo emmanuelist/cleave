@@ -4,6 +4,7 @@
  * a real source, not inferred.
  */
 import { defineChain } from "viem";
+import { config as dotenv } from "dotenv";
 import { SOMNIA_TESTNET_ADDRESSES, SOMNIA_MAINNET_ADDRESSES } from "@somnia-chain/markets-sdk";
 
 export type Network = "testnet" | "mainnet";
@@ -47,7 +48,17 @@ const ADDRESSES: Record<Network, unknown> = {
   mainnet: SOMNIA_MAINNET_ADDRESSES,
 };
 
+let envLoaded = false;
+/** Load .env into process.env exactly once. Without this every secret read
+ *  returns undefined and the failure looks like "you never made a key". */
+function loadEnv() {
+  if (envLoaded) return;
+  envLoaded = true;
+  dotenv({ path: new URL("../.env", import.meta.url).pathname, quiet: true });
+}
+
 export function loadConfig() {
+  loadEnv();
   const network = (process.env.NETWORK ?? "testnet").toLowerCase() as Network;
   if (network !== "testnet" && network !== "mainnet") {
     throw new Error(`Invalid NETWORK="${network}". Use "testnet" or "mainnet".`);

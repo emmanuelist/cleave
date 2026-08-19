@@ -13,6 +13,9 @@ import { loadConfig } from "../src/config.js";
 const cfg = loadConfig();
 const line = (s = "") => console.log(s);
 
+/** faucet() selector + the default 10,000e6 amount, for gas estimation. */
+const FAUCET_CALLDATA = `0x57915897${"00".repeat(28)}02540be400` as `0x${string}`;
+
 async function main() {
   if (!cfg.privateKey) throw new Error("No PRIVATE_KEY in .env — run `npm run newkey` first.");
   const account = privateKeyToAccount(cfg.privateKey as `0x${string}`);
@@ -52,6 +55,38 @@ async function main() {
     return;
   }
 
+  // ── Gas affordability, checked BEFORE broadcasting ────────────────────────
+  // The node reserves gasLimit x maxFeePerGas up front, regardless of what the
+  // tx actually burns. The SDK defaults to a 10,000,000 ceiling and bids well
+  // over base fee, so it reserves ~0.6 STT for a call that costs ~0.008. We
+  // estimate, add headroom, and say plainly what is missing.
+  const gasPrice = await pub.getGasPrice();
+  let gasEstimate: bigint;
+  try {
+    gasEstimate = await pub.estimateGas({ account: account.address, to: collateral, data: FAUCET_CALLDATA });
+  } catch {
+    gasEstimate = 1_500_000n; // observed ~1.38M on 2026-08-19
+  }
+  const gasLimit = (gasEstimate * 130n) / 100n;          // 30% headroom
+  const reserve = gasLimit * gasPrice * 2n;              // node bids over base fee
+  line(`gas est     ${gasEstimate} units @ ${Number(gasPrice) / 1e9} gwei`);
+  line(`reserve     ${formatEther(reserve)} STT needed to broadcast`);
+
+  if (stt < reserve) {
+    const short = reserve - stt;
+    line();
+    line(`\x1b[31mNot enough STT. Short by ${formatEther(short)} STT.\x1b[0m`);
+    line(`You can afford ${stt / gasPrice} gas units; this call needs ~${gasEstimate}.`);
+    line();
+    line("Top up the same address, then run this again:");
+    line(`  ${account.address}`);
+    line();
+    line("Stakely dispenses only 0.001 STT, which is not enough for one call.");
+    line("Ask in the hackathon Telegram, or the Somnia Discord #dev-chat.");
+    line("Aim for at least 1 STT — a maker loop signs constantly.");
+    process.exit(1);
+  }
+
   line();
   line("Minting tUSDC from the SDK faucet...");
   const exchange = new SomniaMarkets({
@@ -61,7 +96,7 @@ async function main() {
     addresses: cfg.addresses,
     privateKey: cfg.privateKey as `0x${string}`,
   });
-  const res = await exchange.trader.faucet();
+  const res = await exchange.trader.faucet({ gas: gasLimit });
   line(`  tx ${(res as { hash?: string }).hash ?? JSON.stringify(res).slice(0, 80)}`);
   line(`  ${cfg.explorer}/tx/${(res as { hash?: string }).hash ?? ""}`);
 
