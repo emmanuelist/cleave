@@ -68,7 +68,11 @@ async function main() {
     gasEstimate = 1_500_000n; // observed ~1.38M on 2026-08-19
   }
   const gasLimit = (gasEstimate * 130n) / 100n;          // 30% headroom
-  const reserve = gasLimit * gasPrice * 2n;              // node bids over base fee
+  // The SDK bids a FIXED premium over base fee that FaucetParams cannot override.
+  // Observed 2026-08-19: base 6 gwei -> maxFeePerGas 59,999,875,072 (~60 gwei, 10x).
+  // The node reserves gasLimit x maxFeePerGas, so the multiplier is load-bearing.
+  const SDK_FEE_MULTIPLIER = 10n;
+  const reserve = gasLimit * gasPrice * SDK_FEE_MULTIPLIER;
   line(`gas est     ${gasEstimate} units @ ${Number(gasPrice) / 1e9} gwei`);
   line(`reserve     ${formatEther(reserve)} STT needed to broadcast`);
 
