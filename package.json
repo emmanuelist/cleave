@@ -11,7 +11,8 @@
     "spread": "tsx scripts/spread.ts",
     "typecheck": "tsc --noEmit",
     "balance": "tsx scripts/balance.ts",
-    "quote": "tsx scripts/quote.ts"
+    "quote": "tsx scripts/quote.ts",
+    "maker": "tsx scripts/maker.ts"
   },
   "dependencies": {
     "@somnia-chain/markets-sdk": "0.27.0",

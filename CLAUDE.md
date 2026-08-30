@@ -4,7 +4,11 @@
 > So is the mechanic: 1 USDso ⇄ 1 Up + 1 Down.
 
 **Thesis (use this sentence verbatim, everywhere):**
-*Quote both sides of a prediction market while holding neither.*
+*Buy every outcome for less than one. Settlement pays exactly one.*
+
+(Superseded 2026-08-30: the original claim was "quote both sides while holding
+neither", which is false - selling an outcome requires owning it. The mint fires
+between two BUYERS, so both legs are bids. See docs/preflight-baseline.md.)
 
 That sentence goes in the repo description, the README subtitle, the DoraHacks
 submission field, and the closing line of the demo video. Identical wording each time.

@@ -229,3 +229,70 @@ Zero inventory still holds — we posted a two-sided-capable quote with no
 position behind it. But "stand in a wide spread" becomes "track the mid and hold
 a tighter spread around it than the incumbent", which is a live loop, not a
 cron.
+
+---
+
+# The thesis was wrong, and the correction is better — 2026-08-30
+
+## What failed
+
+Quoting a **bid and an ask** on the Up book. The bid rested; the ask was
+rejected:
+
+```
+11:35:03  book 0.450/0.480  ours 0.451/ —   reprice both
+          ask rejected: InsufficientBalance
+```
+
+Selling Up requires owning Up. There is no naked short. "Quote both sides while
+holding neither" is false if "both sides" means bid and ask.
+
+## Where the misreading came from
+
+> "Two opposite-side **buyers** can cross with no seller at all — the pool mints
+> a fresh Up/Down pair from their combined collateral."
+
+*Buyers.* Both of them. The mint fires when a **buy Up** crosses a **buy Down**,
+not when a buy crosses a sell. Quoting both sides means two bids on two
+outcomes, each needing nothing but collateral.
+
+## What actually works
+
+```
+11:38:17  Up 0.462  Down 0.509  pair 0.973  edge 2.7pp  reprice both
+11:39:31  Up 0.463  Down 0.513  pair 0.978  edge 2.2pp  reprice Down
+11:40:13  Up 0.463  Down 0.514  pair 0.979  edge 2.1pp  hold
+```
+
+Both legs rested for two minutes with **zero outcome tokens held** — collateral
+only. Confirmed on `ETH-0-31AUG26/tUSDC`.
+
+## The economics, which are now much simpler
+
+An Up and a Down together are a **complete set**, and a complete set redeems for
+**exactly 1**, whatever happens in the world. So:
+
+```
+pay        p + q   (our two bids)
+receive    1.000   (guaranteed, at settlement)
+edge       1 - (p + q)     observed 2.1 - 2.7pp
+```
+
+This is not spread capture and it is not a directional view. **There is no
+market risk in a filled pair.** The residual risks are named honestly:
+
+1. **Leg risk.** One bid fills, the other does not. We hold a naked outcome until
+   the second fills or we merge out. This is the real risk and the loop must
+   manage it.
+2. **Expiry risk.** Holding a single leg into settlement is a coin flip.
+3. **Queue risk.** We are quoting for free optionality that never gets taken.
+
+## Consequence for the product
+
+The claim tightens from a market-making story to an arithmetic one:
+
+> **Buy every outcome for less than one. Settlement pays exactly one.**
+
+Falsifiable, checkable on screen, and it is the mechanic rather than a gloss on
+it. `1 - (p + q)` is the number the interface should put in front of a judge,
+because anyone can verify it against the book in about four seconds.

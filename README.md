@@ -1,6 +1,6 @@
 # Cleave
 
-**Quote both sides of a prediction market while holding neither.**
+**Buy every outcome for less than one. Settlement pays exactly one.**
 
 Built for the Somnia × DreamDEX Event Contracts Hackathon.
 
