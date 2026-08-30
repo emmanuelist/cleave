@@ -1,7 +1,7 @@
-# Preflight baseline — 2026-08-19
+# Preflight baseline — 2026-08-30
 
-First end-to-end read against Somnia Shannon testnet, six days before the
-submission window opens. Recorded so we can tell drift from breakage later.
+First end-to-end read against Somnia Shannon testnet, with the submission window
+already open and nine days to the deadline. Recorded so we can tell drift from breakage later.
 
 ## Environment
 
@@ -68,7 +68,7 @@ has been run:
 
 ---
 
-# Spread survey — 2026-08-19, later same day
+# Spread survey — 2026-08-30, later same day
 
 `npm run spread`. Eight live markets, all two-sided. This is the number the whole
 thesis rests on, so it is measured rather than assumed.
@@ -124,7 +124,7 @@ orders, and no position.
 
 ---
 
-# The gas ceiling problem — 2026-08-19
+# The gas ceiling problem — 2026-08-30
 
 The unified API (`exchange.createOrder`) cannot run on a faucet-funded wallet,
 and the ceiling is not reachable from the config it accepts.
@@ -177,7 +177,7 @@ the same pattern: a real precondition reported as a parameter error.
 
 ---
 
-# First live order — 2026-08-19
+# First live order — 2026-08-30
 
 ```
 market   ETH-0-30AUG26-1200/tUSDC#YES

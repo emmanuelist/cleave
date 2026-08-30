@@ -9,18 +9,19 @@ Built for the Somnia × DreamDEX Event Contracts Hackathon.
 
 ---
 
-## Status — pre-build
+## Status — in build
 
-Submissions open **Aug 25** and close **Sep 8, 2026**. This repository currently
-contains the rig: pinned SDK, verified protocol constants, and a read-only
-preflight that proves the stack against live testnet. **No trading code has been
-written yet, and nothing here claims a fill.**
+Submissions close **Sep 8, 2026 at 19:00**. The write path is verified end to
+end: a post-only maker order rests on-chain at
+[`0x29f6103…`](https://shannon-explorer.somnia.network/tx/0x29f610342a8c9e70880a0d148da2d551d82845e353f8655bfd68f3f0d32b4e8c).
+The maker loop itself is not built yet.
 
 What is verified today, and reproducible with `npm run preflight`:
 
 - `@somnia-chain/markets-sdk` 0.27.0 reads 551 indexed markets on Somnia Shannon
 - 8 markets live, all returning on-chain `status = 1` (Trading)
-- real order book depth on `ETH-0-19AUG26-1245/tUSDC#YES`
+- 10,000 tUSDC minted via the SDK faucet, on-chain
+- a post-only order accepted and resting, with a transaction hash
 
 See [docs/preflight-baseline.md](docs/preflight-baseline.md) for the full run,
 including two defects found and fixed.

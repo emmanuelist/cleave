@@ -10,7 +10,8 @@ That sentence goes in the repo description, the README subtitle, the DoraHacks
 submission field, and the closing line of the demo video. Identical wording each time.
 
 **Event:** Somnia × DreamDEX Event Contracts Hackathon.
-Registration open now · submissions **Aug 25 – Sep 8, 2026** · $5,000 pool.
+Submissions **OPEN since Aug 25**. Deadline **Sep 8, 2026 19:00**. $5,000 pool.
+**Nine days left as of Aug 30.** 11 BUIDLs already submitted, 255 hackers registered.
 
 **Judging weights — build against these, not against taste:**
 
@@ -41,7 +42,7 @@ Registration open now · submissions **Aug 25 – Sep 8, 2026** · $5,000 pool.
 5. **Green gate before any phase closes:** typecheck clean, lint zero warnings,
    build succeeds. No exceptions, no "fix it later."
 
-## 2. Pinned versions — verified against the npm registry on 2026-08-19
+## 2. Pinned versions — verified against the npm registry on 2026-08-30
 
 ```
 @somnia-chain/markets-sdk   0.27.0     <- latest; publ. 2026-08-14
