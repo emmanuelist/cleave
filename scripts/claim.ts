@@ -13,7 +13,7 @@
  *   npm run claim -- --live    # redeem it
  */
 import {
-  SomniaMarkets, isBinaryMarket, claimableFrom, outcomeId, erc6909Abi,
+  SomniaMarkets, isBinaryMarket, claimableFrom, erc6909Abi,
   type ClaimableInput,
 } from "@somnia-chain/markets-sdk";
 import { createPublicClient, http, formatUnits } from "viem";
@@ -53,21 +53,26 @@ async function main() {
 
   const inputs: ClaimableInput[] = [];
 
+  // Outcome tokens live on a shared ERC-6909 SINGLETON, not on the pool.
+  // getMarketOnchain hands back that address plus the market's yesId/noId, so
+  // there is no need to derive ids — and reading balanceOf on the pool (the
+  // obvious guess) simply reverts.
   for (const m of past) {
-    const pool = m.poolAddress;
-    const nonce = BigInt(m.nonce ?? 0);
+    let oc: { outcomeToken: `0x${string}`; yesId: bigint; noId: bigint };
+    try {
+      oc = await exchange.client.getMarketOnchain(m.marketId) as typeof oc;
+    } catch { continue; }
     for (const idx of [0, 1] as const) {
-      const id = outcomeId(pool, nonce, idx);
       let bal = 0n;
       try {
         bal = await pub.readContract({
-          address: pool, abi: erc6909Abi, functionName: "balanceOf",
-          args: [account.address, id],
+          address: oc.outcomeToken, abi: erc6909Abi, functionName: "balanceOf",
+          args: [account.address, idx === 0 ? oc.yesId : oc.noId],
         }) as bigint;
       } catch { continue; }
       if (bal <= 0n) continue;
       inputs.push({
-        marketId: m.marketId, pool, outcomeIdx: idx, amount: bal,
+        marketId: m.marketId, pool: m.poolAddress, outcomeIdx: idx, amount: bal,
         winningOutcome: m.winningOutcome ?? null,
         voided: String(m.status) === "Voided",
         status: String(m.status),
