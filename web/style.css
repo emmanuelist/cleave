@@ -68,10 +68,7 @@ body {
   background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(6px);
 }
 .brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
-.mark {
-  width: 9px; height: 9px; align-self: center; flex: none;
-  background: var(--under); clip-path: polygon(50% 0, 100% 100%, 0 100%);
-}
+.mark { align-self: center; flex: none; display: block; }
 .name { font-family: var(--mono); font-weight: 600; letter-spacing: 0.22em; font-size: 11px; }
 .claim {
   color: var(--ink-dim); font-size: 12px; white-space: nowrap;

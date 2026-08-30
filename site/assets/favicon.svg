@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Cleave">
+  <title>Cleave</title>
+  <!-- The mark is the mechanic. A rule at 1.000, the gap beneath it (the edge,
+       the part you keep), and the two outcomes stacked below filling the rest.
+       Rects only, so every rasteriser agrees with the browser. -->
+  <rect width="64" height="64" rx="13" fill="#0d0f13"/>
+
+  <!-- unity -->
+  <rect x="12" y="13" width="40" height="3.5" rx="1.75" fill="#4fd1c5"/>
+
+  <!-- the gap, ticked so it reads as measured space rather than emptiness -->
+  <g fill="#4fd1c5" opacity=".42">
+    <rect x="12"   y="21" width="3.4" height="2" rx="1"/>
+    <rect x="19.2" y="21" width="3.4" height="2" rx="1"/>
+    <rect x="26.4" y="21" width="3.4" height="2" rx="1"/>
+    <rect x="33.6" y="21" width="3.4" height="2" rx="1"/>
+    <rect x="40.8" y="21" width="3.4" height="2" rx="1"/>
+    <rect x="48"   y="21" width="4"   height="2" rx="1"/>
+  </g>
+
+  <!-- Down -->
+  <rect x="12" y="28" width="40" height="11.5" rx="2.5" fill="#2b3a4a"/>
+  <!-- Up -->
+  <rect x="12" y="41" width="40" height="11.5" rx="2.5" fill="#1c313a"/>
+  <rect x="12.6" y="41.6" width="38.8" height="10.3" rx="2" fill="none" stroke="#4fd1c5" stroke-opacity=".35"/>
+</svg>

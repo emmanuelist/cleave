@@ -2,6 +2,9 @@
 
 **Buy every outcome for less than one. Settlement pays exactly one.**
 
+**[cleave-ecru.vercel.app](https://cleave-ecru.vercel.app)** reads Somnia live in
+your browser, so the claim is checkable against the chain while you read it.
+
 An automated market maker for DreamDEX Event Contracts on Somnia. It rests a bid
 on *both* outcomes of a binary market at prices summing to less than 1, holds no
 outcome tokens, and takes no view on the underlying.
@@ -34,8 +37,9 @@ indexer directly (CORS is open) and shows the pair cost currently available on
 the venue, so the claim on the page is checkable against the chain while you
 read it.
 
-Deploy it anywhere static. For GitHub Pages: Settings → Pages → deploy from
-branch, `/site`.
+Deployed at **[cleave-ecru.vercel.app](https://cleave-ecru.vercel.app)**.
+`vercel.json` sets `site` as the output directory, so `vercel deploy --prod`
+ships it. Any static host works.
 
 ![Cleave landing](docs/shots/landing.png)
 

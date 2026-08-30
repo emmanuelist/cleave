@@ -6,14 +6,14 @@
 <title>Cleave, buy every outcome for less than one</title>
 <meta name="description" content="An automated market maker for DreamDEX Event Contracts on Somnia. It buys both outcomes of a binary market for less than 1, and settlement pays exactly 1.">
 <meta name="theme-color" content="#08090b">
-<link rel="canonical" href="https://emmanuelist.github.io/cleave/">
+<link rel="canonical" href="https://cleave-ecru.vercel.app/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Cleave">
 <meta property="og:title" content="Cleave: buy every outcome for less than one">
 <meta property="og:description" content="A market maker for prediction markets on Somnia. It rests a bid on both outcomes, holds no inventory, and takes no view on the underlying. Settlement pays exactly 1.">
-<meta property="og:url" content="https://emmanuelist.github.io/cleave/">
-<meta property="og:image" content="https://emmanuelist.github.io/cleave/assets/og.png">
+<meta property="og:url" content="https://cleave-ecru.vercel.app/">
+<meta property="og:image" content="https://cleave-ecru.vercel.app/assets/og.png">
 <meta property="og:image:width" content="1440">
 <meta property="og:image:height" content="900">
 <meta property="og:image:alt" content="The Cleave instrument showing a live pair cost below 1.000">
@@ -21,8 +21,11 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Cleave: buy every outcome for less than one">
 <meta name="twitter:description" content="A market maker for prediction markets on Somnia. Settlement pays exactly 1.">
-<meta name="twitter:image" content="https://emmanuelist.github.io/cleave/assets/og.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2 L14 14 L2 14 Z' fill='%234fd1c5'/%3E%3C/svg%3E">
+<meta name="twitter:image" content="https://cleave-ecru.vercel.app/assets/og.png">
+<link rel="icon" href="/assets/favicon.ico" sizes="48x48">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/assets/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -52,7 +55,7 @@ a:hover{border-bottom-color:var(--under)}
 .nav{position:sticky;top:0;z-index:40;background:rgba(8,9,11,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
 .nav-in{display:flex;align-items:center;justify-content:space-between;height:56px;gap:24px}
 .nav-mark{display:inline-flex;align-items:center;gap:9px;border:0}
-.nav-mark i{width:9px;height:9px;background:var(--under);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.nav-mark svg,.mark svg{display:block;flex:none}
 .nav-mark span{font-family:var(--mono);font-weight:600;letter-spacing:.22em;font-size:11px;color:var(--ink)}
 .nav-links{display:flex;align-items:center;gap:22px}
 .nav-links a{font-size:13px;color:var(--dim);border:0}
@@ -66,7 +69,7 @@ a:hover{border-bottom-color:var(--under)}
 #field{position:absolute;inset:0;width:100%;height:100%;z-index:0}
 .hero .wrap{position:relative;z-index:1}
 .mark{display:inline-flex;align-items:center;gap:11px;margin-bottom:34px}
-.mark i{width:11px;height:11px;background:var(--under);clip-path:polygon(50% 0,100% 100%,0 100%)}
+
 .mark span{font-family:var(--mono);font-weight:600;letter-spacing:.24em;font-size:12px}
 h1{
   font-family:var(--mono);font-weight:400;letter-spacing:-.045em;
@@ -160,7 +163,7 @@ footer{border-top:1px solid var(--hair);padding:52px 0 64px;background:rgba(13,1
 
 <nav class="nav">
   <div class="wrap nav-in">
-    <a class="nav-mark" href="#top"><i></i><span>CLEAVE</span></a>
+    <a class="nav-mark" href="#top"><svg viewBox="0 0 64 64" width="15" height="15" aria-hidden="true"><rect x="12" y="13" width="40" height="6" rx="3" fill="#4fd1c5"/><rect x="12" y="29" width="40" height="10" rx="2" fill="#2b3a4a"/><rect x="12" y="42" width="40" height="10" rx="2" fill="none" stroke="#4fd1c5" stroke-opacity=".55" stroke-width="3"/></svg><span>CLEAVE</span></a>
     <div class="nav-links">
       <a href="#how">How it works</a>
       <a href="#instrument">The instrument</a>
@@ -314,7 +317,7 @@ npm run serve --live  <span class="u"># instrument on :5173</span></div>
 <footer>
   <div class="wrap foot-in">
     <div class="foot-col">
-      <div class="mark foot-mark"><i></i><span>CLEAVE</span></div>
+      <div class="mark foot-mark"><svg viewBox="0 0 64 64" width="15" height="15" aria-hidden="true"><rect x="12" y="13" width="40" height="6" rx="3" fill="#4fd1c5"/><rect x="12" y="29" width="40" height="10" rx="2" fill="#2b3a4a"/><rect x="12" y="42" width="40" height="10" rx="2" fill="none" stroke="#4fd1c5" stroke-opacity=".55" stroke-width="3"/></svg><span>CLEAVE</span></div>
       <p class="foot-note">Buy every outcome for less than one. Settlement pays exactly one.</p>
     </div>
     <div class="foot-col">
