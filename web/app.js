@@ -1,9 +1,53 @@
 // Cleave — view layer. Renders engine state; computes nothing it isn't given.
+import { mountGL } from "/gl.js";
+import { mountTrace } from "/trace.js";
+import { Spring } from "/spring.js";
 const $ = (id) => document.getElementById(id);
 const f3 = (n) => (n === undefined || n === null ? "—" : n.toFixed(3));
 const pp = (n) => (n === undefined || n === null ? "—" : (n * 100).toFixed(1));
 
 let latest = null;
+
+const gl = mountGL(document.getElementById("gl"));
+const trace = mountTrace(document.getElementById("trace"), { cap: 0.985, windowMs: 100_000 });
+
+// Numerals settle like a needle. The edge is the number the whole product is
+// about, so it gets physics rather than a tween.
+const sEdge = new Spring(0, { stiffness: 120, damping: 16 });
+const sPair = new Spring(1, { stiffness: 150, damping: 20 });
+let edgeReady = false;
+
+// Effects fire on real transitions only — never on a timer, never on a
+// re-render. We diff the engine's own counters and event list.
+let seenFills = 0, seenRolls = 0, seenEventAt = 0;
+
+function driveEffects(s) {
+  const fills = s.events.filter((e) => e.kind === "fill").length;
+  if (s.stats.rolls > seenRolls) { seenRolls = s.stats.rolls; gl?.roll(); trace.mark("roll"); }
+  const newest = s.events[0]?.at ?? 0;
+  if (newest > seenEventAt) {
+    for (const e of s.events) {
+      if (e.at <= seenEventAt) break;
+      if (e.kind === "fill") { gl?.fill(); trace.mark("fill"); }
+    }
+    seenEventAt = newest;
+  }
+  seenFills = fills;
+}
+
+let lastT = performance.now();
+function animate(now) {
+  const dt = (now - lastT) / 1000; lastT = now;
+  const e = sEdge.step(dt), p = sPair.step(dt);
+  if (edgeReady) {
+    document.getElementById("edge").textContent = (e * 100).toFixed(1);
+    document.getElementById("rPair").textContent = p.toFixed(3);
+    // The ground breathes in proportion to edge — 0 to ~4pp normalised.
+    gl?.setEdge(Math.max(0, Math.min(1, e / 0.04)));
+  }
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
 
 const V_FLOOR = 0.95;   // vernier window: 0.950 -> 1.000, twentyfold expansion
 
@@ -30,10 +74,15 @@ function renderUnity(s) {
   $("vPaid").style.top = `${(frac * 100).toFixed(2)}%`;
   $("vPairVal").textContent = f3(pair);
 
-  $("edge").textContent = edge === undefined ? "—" : pp(edge);
   $("rUp").textContent = f3(up);
   $("rDown").textContent = f3(down);
-  $("rPair").textContent = f3(pair);
+  if (edge === undefined) {
+    $("edge").textContent = "—"; $("rPair").textContent = "—";
+  } else {
+    if (!edgeReady) { sEdge.jump(edge); sPair.jump(pair); edgeReady = true; }
+    else { sEdge.set(edge); sPair.set(pair); }
+    trace.push(pair);
+  }
 
   const v = $("verdict");
   if (!known) { v.dataset.state = "idle"; v.textContent = "Acquiring market…"; }
@@ -132,6 +181,7 @@ function tickCountdown() {
 
 function render(s) {
   latest = s;
+  driveEffects(s);
   renderChrome(s);
   renderUnity(s);
   renderBook("bUp", "bUpTop", s.book.upDepth, s.quote.up);
@@ -141,6 +191,9 @@ function render(s) {
   renderEvents(s);
   tickCountdown();
 }
+
+document.body.classList.add("boot");
+addEventListener("load", () => setTimeout(() => document.body.classList.remove("boot"), 1400));
 
 const src = new EventSource("/api/stream");
 src.onmessage = (e) => { $("conn").dataset.on = "true"; $("conn").textContent = "live"; render(JSON.parse(e.data)); };

@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<canvas id="gl" class="gl" aria-hidden="true"></canvas>
 <header class="bar">
   <div class="brand">
     <span class="mark" aria-hidden="true"></span>
@@ -66,6 +67,14 @@
           </dl>
         </div>
       </div>
+    </div>
+
+    <div class="trace-wrap">
+      <div class="trace-head">
+        <span class="eyebrow trace-eyebrow">Pair cost over session</span>
+        <span class="trace-note">the line is capped, not chased</span>
+      </div>
+      <canvas id="trace" class="trace"></canvas>
     </div>
 
     <p class="verdict" id="verdict" data-state="idle">Acquiring market…</p>

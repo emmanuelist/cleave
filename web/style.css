@@ -34,6 +34,19 @@
 }
 
 * { box-sizing: border-box; }
+
+/* ── The ground ─────────────────────────────────────────────────────
+   A WebGL field behind the whole panel. It breathes in proportion to the
+   edge, pulses on a real fill and sweeps on a rollover — so the atmosphere
+   is a readout, not a wallpaper. Hidden entirely under reduced motion.
+   ----------------------------------------------------------------- */
+.gl { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; display: block; }
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(130% 90% at 24% 34%, transparent 34%, rgba(4,5,7,.42) 100%),
+    linear-gradient(180deg, rgba(8,9,11,.10), rgba(8,9,11,.42));
+}
 html, body { height: 100%; }
 body {
   margin: 0; background: var(--ground); color: var(--ink);
@@ -45,9 +58,10 @@ body {
 
 /* ── Chrome ─────────────────────────────────────────────────────────── */
 .bar {
+  position: relative; z-index: 1;
   display: flex; align-items: center; justify-content: space-between; gap: 24px;
   padding: 0 20px; height: 52px; border-bottom: 1px solid var(--hair);
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(6px);
 }
 .brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
 .mark {
@@ -73,7 +87,7 @@ body {
    rail carries state that supports it. Activity runs full width beneath the
    hero because it is the surface that grows as the session runs. */
 main {
-  display: grid; gap: 1px; background: var(--hair);
+  display: grid; gap: 1px; background: color-mix(in srgb, var(--hair) 70%, transparent);
   grid-template-columns: minmax(560px, 1fr) minmax(300px, 380px);
   grid-template-rows: 1fr minmax(150px, 210px);
   grid-template-areas: "unity rail" "events rail";
@@ -82,7 +96,7 @@ main {
 .rail { grid-area: rail; display: grid; grid-template-rows: auto auto 1fr; gap: 1px;
         background: var(--hair); padding: 0; }
 .rail > section { padding: 16px 18px; }
-section { background: var(--panel); padding: 16px 18px; min-width: 0; overflow: hidden; }
+section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdrop-filter: blur(7px) saturate(115%); padding: 16px 18px; min-width: 0; overflow: hidden; }
 .unity  { grid-area: unity; display: flex; flex-direction: column; }
 .events { grid-area: events; display: flex; flex-direction: column; min-height: 0; position: relative; }
 /* The log outruns its strip within a minute of going live; fade the cut so it
@@ -186,6 +200,13 @@ section { background: var(--panel); padding: 16px 18px; min-width: 0; overflow: 
 .verdict[data-state="over"]  { color: var(--over); }
 .verdict[data-state="idle"]  { color: var(--ink-mute); }
 
+/* ── Trace ─────────────────────────────────────────────────────────── */
+.trace-wrap { flex: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hair); }
+.trace-head { display: flex; align-items: baseline; justify-content: space-between; }
+.trace-eyebrow { margin: 0 0 6px; }
+.trace-note { font-size: 11px; color: var(--rolled); }
+.trace { display: block; width: 100%; height: 92px; }
+
 /* ── Books ──────────────────────────────────────────────────────────── */
 .book-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .book-head {
@@ -204,12 +225,12 @@ section { background: var(--panel); padding: 16px 18px; min-width: 0; overflow: 
   content: ""; position: absolute; inset: 0 auto 0 0; z-index: -1;
   width: calc(var(--w, 0) * 100%); background: #1a2433; opacity: .55;
 }
-.levels li.mine { color: var(--under); }
-.levels li.mine::before { background: var(--under); opacity: .13; }
-.levels li.mine::after {
-  content: "◂ ours"; position: absolute; right: -2px; top: 3px;
-  font-size: 9px; letter-spacing: .06em; color: var(--under); opacity: .8;
+.levels li.mine {
+  color: var(--under);
+  box-shadow: inset 2px 0 0 var(--under);
+  padding-left: 8px;
 }
+.levels li.mine::before { background: var(--under); opacity: .16; }
 .levels .empty { color: var(--rolled); justify-content: flex-start; }
 
 /* ── Position ───────────────────────────────────────────────────────── */
@@ -256,10 +277,50 @@ section { background: var(--panel); padding: 16px 18px; min-width: 0; overflow: 
 .ev-list li[data-k="post"] .k { color: var(--ink-mute); }
 .ev-list li[data-k="note"] .k { color: var(--rolled); }
 
+/* ── Entry ──────────────────────────────────────────────────────────
+   The instrument assembles rather than appearing: scale draws in, the
+   segments rise from zero, the vernier settles. ~1.1s, once per load, and
+   skipped entirely under reduced motion.
+   ----------------------------------------------------------------- */
+@keyframes riseIn { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes drawDown { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes glowIn { from { opacity: 0; filter: blur(10px); } to { opacity: 1; filter: none; } }
+
+.boot .column { animation: drawDown .62s cubic-bezier(.2,.75,.25,1) both; }
+.boot .seg { transform-origin: bottom; animation: riseIn .70s cubic-bezier(.2,.75,.25,1) both .10s; }
+.boot .scale span { animation: fadeUp .45s ease both; animation-delay: calc(var(--at) * .28s + .06s); }
+.boot .v-track { animation: drawDown .70s cubic-bezier(.2,.75,.25,1) both .22s; }
+.boot .edge-num { animation: glowIn .75s ease both .46s; }
+.boot .edge-unit, .boot .readout { animation: fadeUp .5s ease both .60s; }
+.boot .trace-wrap { animation: fadeUp .5s ease both .74s; }
+.boot .verdict { animation: fadeUp .5s ease both .84s; }
+.boot .rail > section:nth-child(1) { animation: fadeUp .5s ease both .30s; }
+.boot .rail > section:nth-child(2) { animation: fadeUp .5s ease both .40s; }
+.boot .rail > section:nth-child(3) { animation: fadeUp .5s ease both .50s; }
+.boot .events { animation: fadeUp .5s ease both .58s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .boot * { animation: none !important; }
+  /* No shader, so paint the volume statically — still a lit panel, not a flat one. */
+  body::before {
+    background:
+      radial-gradient(120% 85% at 26% 36%, rgba(30,44,52,.55) 0%, transparent 55%),
+      radial-gradient(130% 90% at 24% 34%, transparent 30%, rgba(4,5,7,.45) 100%),
+      linear-gradient(180deg, rgba(8,9,11,.10), rgba(8,9,11,.45));
+  }
+  .gap, .seg, .v-pair, .v-gap, .v-paid { transition: none !important; }
+}
+
+/* Live values carry a faint bloom so the eye finds them first. */
+.edge-num { text-shadow: 0 0 26px rgba(79,209,197,.45), 0 0 60px rgba(79,209,197,.16); }
+.pos-v    { text-shadow: 0 0 18px rgba(232,235,240,.14); }
+
 /* ── Footer ─────────────────────────────────────────────────────────── */
 .foot {
   height: 30px; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px; border-top: 1px solid var(--hair); background: var(--panel);
+  padding: 0 20px; border-top: 1px solid var(--hair);
+  background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(6px);
   font-family: var(--mono); font-size: 10px; color: var(--rolled);
 }
 .conn::before { content: "○ "; }
@@ -284,11 +345,20 @@ section { background: var(--panel); padding: 16px 18px; min-width: 0; overflow: 
   .claim { display: none; }
   main { grid-template-columns: 1fr; grid-template-areas: "unity" "rail" "events"; }
   .rail { grid-template-columns: 1fr; }
-  .unity-body { grid-template-columns: 36px 74px 1fr; gap: 10px; }
-  .vernier { grid-template-columns: 1fr; gap: 10px; }
-  .v-track { min-height: 96px; }
-  .v-read { align-self: start; }
-  .edge-num { font-size: 38px; }
-  .readout { margin-top: 10px; }
+  /* Both instruments stay vertical bands — a squat wide vernier reads as
+     noise rather than a scale. Narrow them and give the readout the rest. */
+  .unity-body { grid-template-columns: 28px 40px 1fr; gap: 9px; min-height: 300px; }
+  .vernier { grid-template-columns: 42px 1fr; gap: 12px; }
+  .v-track { min-height: 0; }
+  .v-rule span, .v-floor span { left: 4px; font-size: 9px; }
+  .seg-label { font-size: 8px; letter-spacing: .06em; }
+  .seg-label b { display: block; margin: 1px 0 0; }
+  .v-read { align-self: center; }
+  .edge-num { font-size: 42px; }
+  .readout { margin-top: 12px; }
+  .trace { height: 76px; }
+  /* The log is unbounded on a phone — 40 events ran the page to 2200px. */
+  .ev-list { max-height: 320px; }
+  .events { min-height: 0; }
   .bar { height: auto; padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
 }
