@@ -121,3 +121,56 @@ inventories, or a hedge between them. Posting a bid and an ask on the Up book
 *is* quoting both sides — and because the pool mints the pair when they cross,
 neither leg needs inventory behind it. The product is one book, two resting
 orders, and no position.
+
+---
+
+# The gas ceiling problem — 2026-08-19
+
+The unified API (`exchange.createOrder`) cannot run on a faucet-funded wallet,
+and the ceiling is not reachable from the config it accepts.
+
+## Mechanism
+
+`TraderConfig.gas` documents a **10,000,000 default ceiling**, overridable
+"per-call via its params' `gas`". The node reserves `gasLimit × maxFeePerGas`
+before broadcasting, whatever the tx actually burns. On Shannon the SDK bids a
+fixed ~60 gwei against a 6 gwei base fee, so:
+
+```
+10,000,000 gas x 60 gwei = 0.600 STT reserved, per transaction
+```
+
+Observed on a failed `approve` (a ~46k-gas ERC-20 call):
+
+```
+gasLimit     0x989680      = 10,000,000
+maxFeePerGas 0x0df8475800  = 59,999,875,072  (~60 gwei, 10x base)
+result       Details: insufficient balance
+```
+
+## Why it cannot be worked around from the unified tier
+
+- `SomniaMarketsConfig` carries `indexerUrl`, `chain`, `wsRpcUrl`, `fees`,
+  `addresses` — **no `gas`**, so the lazily-built `exchange.trader` always takes
+  the 10M default.
+- `setSigner()` accepts only `Pick<TraderConfig, "privateKey" | "account" |
+  "walletClient">` — no gas either.
+- `createOrder`'s params bag (`CreateOrderParams`) is time-in-force, slippage and
+  builder attribution. No gas.
+- The failing `approve` is issued *internally* by `createOrder`, so even a
+  per-call override on the order would not cover it.
+
+The only route to a sane ceiling is dropping to the raw tier:
+`client.createTrader({ privateKey, gas })`, which does accept it.
+
+## Consequence
+
+A wallet needs **0.6 STT resident per in-flight transaction** to use the
+documented happy path, for calls that burn ~0.008. Faucets dispense 0.001–0.1.
+So the documented API is unusable on exactly the wallet state a new participant
+has, and the failure surfaces as `Missing or invalid parameters` — with
+`insufficient balance` buried in the cause chain.
+
+**Feedback report item.** Along with `getMarketOnchain` requiring `addresses`
+and the faucet's own 13x reserve-to-burn ratio, this is the third instance of
+the same pattern: a real precondition reported as a parameter error.
