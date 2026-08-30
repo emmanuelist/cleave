@@ -1,7 +1,7 @@
 /**
  * The maker loop, as a library.
  *
- * scripts/maker.ts prints it; the server streams it. Same code either way —
+ * scripts/maker.ts prints it; the server streams it. Same code either way 
  * the interface is not a second implementation of the strategy, it is a view
  * onto the one that trades.
  */
@@ -135,7 +135,8 @@ export async function runMaker(opts: RunOpts, emit: (s: EngineState) => void): P
       try { return await exchange.createOrder(sym, "limit", "buy", opts.size, price, { timeInForce: "PO" }); }
       catch (err) {
         const name = (err as { errorName?: string }).errorName;
-        if (name === "TradingNotActive" || name === "MarketNotTrading") { needsRoll = true; return undefined; }
+        if (name === "TradingNotActive" || name === "MarketNotTrading"
+            || name === "OrderAlreadyExpired" || name === "MarketExpired") { needsRoll = true; return undefined; }
         if (name === "PostOnlyWouldCross") {
           if (a === 3) return undefined;
           const b = await exchange.watchOrderBook(sym, 6);
@@ -156,14 +157,14 @@ export async function runMaker(opts: RunOpts, emit: (s: EngineState) => void): P
 
   while (Date.now() < deadline) {
     if (mkt && (needsRoll || Date.now() >= mkt.expiry - ROLL_LEAD_MS)) {
-      push("roll", needsRoll ? "book locked — rolling" : "window closing — rolling");
+      push("roll", needsRoll ? "book locked, rolling" : "window closing, rolling");
       needsRoll = false;
       if (opts.live) for (const [o, sym] of [[upOrder, UP], [downOrder, DOWN]] as const)
         if (o?.id) { try { await exchange.cancelOrder(o.id, sym); } catch { /* gone with the market */ } }
       upOrder = undefined; downOrder = undefined;
       const l = st.lineage.find((x) => x.symbol === UP); if (l) l.state = "rolled";
       const next = await selectMarket(exchange, mkt, opts.short);
-      if (!next) { push("note", "no successor — stopping"); flush(); break; }
+      if (!next) { push("note", "no successor, stopping"); flush(); break; }
       mkt = next; UP = next.up; DOWN = next.down;
       st.market = { up: UP, down: DOWN, marketId: next.marketId, base: next.base, expiry: next.expiry };
       st.lineage.unshift({ symbol: UP, expiry: next.expiry, state: "active" });
@@ -203,13 +204,13 @@ export async function runMaker(opts: RunOpts, emit: (s: EngineState) => void): P
       const ask = (shortSym === UP ? ub : db).asks[0]?.[0];
       const bud = filled === undefined ? undefined : 1 - filled;
       if (ask !== undefined && bud !== undefined && ask < bud) {
-        push("leg", `naked ${shortSym === UP ? "Down" : "Up"} — completing at ${ask.toFixed(3)} (budget ${bud.toFixed(3)})`);
+        push("leg", `naked ${shortSym === UP ? "Down" : "Up"}, completing at ${ask.toFixed(3)} (budget ${bud.toFixed(3)})`);
         try {
           await exchange.createOrder(shortSym, "limit", "buy", Math.abs(pos.up - pos.down), ask + TICK, { timeInForce: "IOC" });
           push("fill", "pair completed");
         } catch { push("leg", "could not complete"); }
       } else {
-        push("leg", `naked leg — completing at ${ask?.toFixed(3) ?? "?"} exceeds budget ${bud?.toFixed(3) ?? "?"}; holding`);
+        push("leg", `naked leg: completing at ${ask?.toFixed(3) ?? "?"} exceeds budget ${bud?.toFixed(3) ?? "?"}, holding`);
       }
     }
 

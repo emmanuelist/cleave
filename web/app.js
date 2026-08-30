@@ -1,10 +1,10 @@
-// Cleave — view layer. Renders engine state; computes nothing it isn't given.
+// Cleave, view layer. Renders engine state; computes nothing it isn't given.
 import { mountGL } from "/gl.js";
 import { mountTrace } from "/trace.js";
 import { Spring } from "/spring.js";
 const $ = (id) => document.getElementById(id);
-const f3 = (n) => (n === undefined || n === null ? "—" : n.toFixed(3));
-const pp = (n) => (n === undefined || n === null ? "—" : (n * 100).toFixed(1));
+const f3 = (n) => (n === undefined || n === null ? "" : n.toFixed(3));
+const pp = (n) => (n === undefined || n === null ? "" : (n * 100).toFixed(1));
 
 let latest = null;
 
@@ -17,7 +17,7 @@ const sEdge = new Spring(0, { stiffness: 120, damping: 16 });
 const sPair = new Spring(1, { stiffness: 150, damping: 20 });
 let edgeReady = false;
 
-// Effects fire on real transitions only — never on a timer, never on a
+// Effects fire on real transitions only, never on a timer, never on a
 // re-render. We diff the engine's own counters and event list.
 let seenFills = 0, seenRolls = 0, seenEventAt = 0;
 
@@ -42,7 +42,7 @@ function animate(now) {
   if (edgeReady) {
     document.getElementById("edge").textContent = (e * 100).toFixed(1);
     document.getElementById("rPair").textContent = p.toFixed(3);
-    // The ground breathes in proportion to edge — 0 to ~4pp normalised.
+    // The ground breathes in proportion to edge, 0 to ~4pp normalised.
     gl?.setEdge(Math.max(0, Math.min(1, e / 0.04)));
   }
   requestAnimationFrame(animate);
@@ -58,7 +58,7 @@ function renderUnity(s) {
   const pair = known ? up + down : undefined;
   const edge = pair === undefined ? undefined : 1 - pair;
 
-  // Coarse column: percentages of the unit interval. Never px — the column's
+  // Coarse column: percentages of the unit interval. Never px, the column's
   // height comes from its children, so measuring it to size them loops.
   $("segUp").style.height = known ? `${(Math.max(0, up) * 100).toFixed(2)}%` : "0%";
   $("segDown").style.height = known ? `${(Math.max(0, down) * 100).toFixed(2)}%` : "0%";
@@ -77,7 +77,7 @@ function renderUnity(s) {
   $("rUp").textContent = f3(up);
   $("rDown").textContent = f3(down);
   if (edge === undefined) {
-    $("edge").textContent = "—"; $("rPair").textContent = "—";
+    $("edge").textContent = ""; $("rPair").textContent = "";
   } else {
     if (!edgeReady) { sEdge.jump(edge); sPair.jump(pair); edgeReady = true; }
     else { sEdge.set(edge); sPair.set(pair); }
@@ -88,10 +88,10 @@ function renderUnity(s) {
   if (!known) { v.dataset.state = "idle"; v.textContent = "Acquiring market…"; }
   else if (edge > 0) {
     v.dataset.state = "under";
-    v.textContent = `Both outcomes for ${f3(pair)}. Settlement pays 1.000 whichever way it resolves — ${pp(edge)}pp, with no directional risk.`;
+    v.textContent = `Both outcomes for ${f3(pair)}. Settlement pays 1.000 whichever way it resolves. That is ${pp(edge)}pp, with no directional risk.`;
   } else {
     v.dataset.state = "over";
-    v.textContent = `Pair costs ${f3(pair)} against a redemption of 1.000. No edge — standing aside.`;
+    v.textContent = `Pair costs ${f3(pair)} against a redemption of 1.000. No edge, so it stands aside.`;
   }
 }
 
@@ -120,9 +120,9 @@ function renderPosition(s) {
   $("posUp").textContent = up;
   $("posDown").textContent = down;
   const el = $("posState");
-  if (up === 0 && down === 0) { el.dataset.state = "flat"; el.textContent = "flat — no exposure"; }
-  else if (up === down) { el.dataset.state = "paired"; el.textContent = `${up} complete set${up === 1 ? "" : "s"} — redeems for ${up}.000`; }
-  else { el.dataset.state = "naked"; el.textContent = `naked ${up > down ? "Up" : "Down"} ${Math.abs(up - down)} — completing`; }
+  if (up === 0 && down === 0) { el.dataset.state = "flat"; el.textContent = "flat, no exposure"; }
+  else if (up === down) { el.dataset.state = "paired"; el.textContent = `${up} complete set${up === 1 ? "" : "s"}, redeems for ${up}.000`; }
+  else { el.dataset.state = "naked"; el.textContent = `naked ${up > down ? "Up" : "Down"} ${Math.abs(up - down)}, completing`; }
   $("sRe").textContent = s.stats.reprices;
   $("sRoll").textContent = s.stats.rolls;
   $("sLeg").textContent = s.stats.legEvents;
@@ -160,7 +160,7 @@ function renderEvents(s) {
 }
 
 function renderChrome(s) {
-  $("market").textContent = s.market ? s.market.up.replace("/tUSDC#YES", "") : "—";
+  $("market").textContent = s.market ? s.market.up.replace("/tUSDC#YES", "") : "";
   const mode = $("mode");
   mode.dataset.live = String(s.live);
   mode.textContent = s.live ? "LIVE" : "READ-ONLY";
@@ -168,7 +168,7 @@ function renderChrome(s) {
 
 function tickCountdown() {
   const el = $("countdown");
-  if (!latest?.market?.expiry) { el.textContent = "—"; return; }
+  if (!latest?.market?.expiry) { el.textContent = ""; return; }
   const ms = latest.market.expiry - Date.now();
   if (ms <= 0) { el.textContent = "expired"; return; }
   const h = Math.floor(ms / 3600000);

@@ -1,6 +1,6 @@
 /* ── Tokens ────────────────────────────────────────────────────────────
    Colour is derived from the mechanic, not from a palette. The product asks
-   one question — where does the pair sit relative to 1.000 — so the states
+   one question, where does the pair sit relative to 1.000, so the states
    are UNDER (edge exists, quote it), AT (no edge, stand aside) and OVER
    (guaranteed loss, never quote). Lifecycle states follow the same rule.
    None of these could move to another product: nothing else redeems at
@@ -18,10 +18,10 @@
   --ink-mute: #5a6270;
 
   /* the mechanic */
-  --under:    #4fd1c5;   /* pair < 1 — there is edge here */
+  --under:    #4fd1c5;   /* pair < 1. There is edge here */
   --under-lo: #4fd1c51a;
-  --at:       #8b93a1;   /* pair = 1 — nothing to take */
-  --over:     #d97757;   /* pair > 1 — never quote */
+  --at:       #8b93a1;   /* pair = 1, nothing to take */
+  --over:     #d97757;   /* pair > 1, never quote */
 
   /* lifecycle */
   --resting:  #6b7fa8;
@@ -32,7 +32,7 @@
   /* Azeret Mono carries the data: squarish terminals, distinctive numerals,
      and it reads as a measuring instrument rather than a code editor. Instrument
      Sans handles labels. Neither is the default developer stack, which is the
-     point — typography is where a product's character lives or dies. */
+     point, typography is where a product's character lives or dies. */
   --mono: "Azeret Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
@@ -41,7 +41,7 @@
 
 /* ── The ground ─────────────────────────────────────────────────────
    A WebGL field behind the whole panel. It breathes in proportion to the
-   edge, pulses on a real fill and sweeps on a rollover — so the atmosphere
+   edge, pulses on a real fill and sweeps on a rollover, so the atmosphere
    is a readout, not a wallpaper. Hidden entirely under reduced motion.
    ----------------------------------------------------------------- */
 .gl { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; display: block; }
@@ -120,7 +120,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 /* ── The Unity Line ─────────────────────────────────────────────────
    The signature, in two registers. The coarse column is the true unit
    interval: Up and Down stack toward 1.000 and the leftover space is the
-   edge — which is genuinely a sliver, and is drawn as one. The vernier
+   edge, which is genuinely a sliver, and is drawn as one. The vernier
    beside it expands the last five points so the same quantity can actually
    be read. Coarse for honesty, fine for legibility; that is how a measuring
    instrument works, and this product is one.
@@ -154,7 +154,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 .seg-label { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--ink-dim); white-space: nowrap; }
 .seg-label b { color: var(--ink); font-weight: 500; margin-left: 4px; }
 
-/* Vernier — 0.950 → 1.000 expanded twentyfold */
+/* Vernier, 0.950 → 1.000 expanded twentyfold */
 .vernier { display: grid; grid-template-columns: 132px minmax(0, 300px); gap: 22px; min-height: 0; justify-content: start; }
 .v-track {
   position: relative; overflow: hidden; height: 100%; border-left: 1px solid var(--hair-lit);
@@ -253,7 +253,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 .stats dd { margin: 0; font-size: 15px; }
 
 /* ── Lineage ────────────────────────────────────────────────────────
-   Markets die every two minutes. Expired ones recede rather than vanish —
+   Markets die every two minutes. Expired ones recede rather than vanish 
    liveness you cannot fake with a fixture.
    ----------------------------------------------------------------- */
 .lin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
@@ -306,7 +306,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 
 @media (prefers-reduced-motion: reduce) {
   .boot * { animation: none !important; }
-  /* No shader, so paint the volume statically — still a lit panel, not a flat one. */
+  /* No shader, so paint the volume statically, still a lit panel, not a flat one. */
   body::before {
     background:
       radial-gradient(120% 85% at 26% 36%, rgba(30,44,52,.55) 0%, transparent 55%),
@@ -333,7 +333,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 
 /* ── Responsive ─────────────────────────────────────────────────────
    Not a shrunken desktop. On narrow screens the unity line stays first and
-   full-width — it is the whole argument — books follow, and the activity log
+   full-width, it is the whole argument, books follow, and the activity log
    drops to the end where it can scroll.
    ----------------------------------------------------------------- */
 @media (max-width: 1100px) {
@@ -349,7 +349,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
   .claim { display: none; }
   main { grid-template-columns: 1fr; grid-template-areas: "unity" "rail" "events"; }
   .rail { grid-template-columns: 1fr; }
-  /* Both instruments stay vertical bands — a squat wide vernier reads as
+  /* Both instruments stay vertical bands, a squat wide vernier reads as
      noise rather than a scale. Narrow them and give the readout the rest. */
   .unity-body { grid-template-columns: 28px 40px 1fr; gap: 9px; min-height: 300px; }
   .vernier { grid-template-columns: 42px 1fr; gap: 12px; }
@@ -361,7 +361,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
   .edge-num { font-size: 42px; }
   .readout { margin-top: 12px; }
   .trace { height: 76px; }
-  /* The log is unbounded on a phone — 40 events ran the page to 2200px. */
+  /* The log is unbounded on a phone, 40 events ran the page to 2200px. */
   .ev-list { max-height: 320px; }
   .events { min-height: 0; }
   .bar { height: auto; padding: 10px 14px; flex-wrap: wrap; gap: 8px; }

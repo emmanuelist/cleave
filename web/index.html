@@ -19,8 +19,8 @@
     <span class="claim">Buy every outcome for less than one. Settlement pays exactly one.</span>
   </div>
   <div class="bar-right">
-    <span class="market" id="market">—</span>
-    <span class="countdown" id="countdown">—</span>
+    <span class="market" id="market"></span>
+    <span class="countdown" id="countdown"></span>
     <span class="mode" id="mode" data-live="false">READ-ONLY</span>
   </div>
 </header>
@@ -42,27 +42,27 @@
       </div>
       <div class="column" id="column">
         <div class="gap" id="gap"></div>
-        <div class="seg seg-down" id="segDown"><span class="seg-label">DOWN <b id="pDown">—</b></span></div>
-        <div class="seg seg-up" id="segUp"><span class="seg-label">UP <b id="pUp">—</b></span></div>
+        <div class="seg seg-down" id="segDown"><span class="seg-label">DOWN <b id="pDown"></b></span></div>
+        <div class="seg seg-up" id="segUp"><span class="seg-label">UP <b id="pUp"></b></span></div>
       </div>
 
       <!-- Vernier: the last five points, expanded, where the gap is legible.
-           Same number, readable scale — how an instrument shows a fine reading. -->
+           Same number, readable scale, how an instrument shows a fine reading. -->
       <div class="vernier">
         <div class="v-track">
           <div class="v-paid" id="vPaid"></div>
           <div class="v-rule v-unity"><span>1.000</span></div>
           <div class="v-gap" id="vGap"></div>
-          <div class="v-rule v-pair" id="vPair"><span id="vPairVal">—</span></div>
+          <div class="v-rule v-pair" id="vPair"><span id="vPairVal"></span></div>
           <div class="v-floor"><span>0.950</span></div>
         </div>
         <div class="v-read">
-          <span class="edge-num" id="edge">—</span>
+          <span class="edge-num" id="edge"></span>
           <span class="edge-unit">pp edge per pair</span>
           <dl class="readout">
-            <div><dt>Up bid</dt><dd id="rUp" class="num">—</dd></div>
-            <div><dt>Down bid</dt><dd id="rDown" class="num">—</dd></div>
-            <div class="sum"><dt>Pair cost</dt><dd id="rPair" class="num">—</dd></div>
+            <div><dt>Up bid</dt><dd id="rUp" class="num"></dd></div>
+            <div><dt>Down bid</dt><dd id="rDown" class="num"></dd></div>
+            <div class="sum"><dt>Pair cost</dt><dd id="rPair" class="num"></dd></div>
             <div><dt>Redeems at</dt><dd class="num muted">1.000</dd></div>
           </dl>
         </div>
@@ -86,11 +86,11 @@
     <h2 id="books-h" class="eyebrow">Resting bids <span class="hint">ours marked</span></h2>
     <div class="book-pair">
       <div class="book">
-        <div class="book-head"><span>UP</span><span class="num" id="bUpTop">—</span></div>
+        <div class="book-head"><span>UP</span><span class="num" id="bUpTop"></span></div>
         <ol id="bUp" class="levels"></ol>
       </div>
       <div class="book">
-        <div class="book-head"><span>DOWN</span><span class="num" id="bDownTop">—</span></div>
+        <div class="book-head"><span>DOWN</span><span class="num" id="bDownTop"></span></div>
         <ol id="bDown" class="levels"></ol>
       </div>
     </div>
@@ -103,7 +103,7 @@
       <div><span class="pos-k">Up</span><span class="num pos-v" id="posUp">0</span></div>
       <div><span class="pos-k">Down</span><span class="num pos-v" id="posDown">0</span></div>
     </div>
-    <p class="pos-state" id="posState" data-state="flat">flat — no exposure</p>
+    <p class="pos-state" id="posState" data-state="flat">flat, no exposure</p>
     <dl class="stats">
       <div><dt>reprices</dt><dd class="num" id="sRe">0</dd></div>
       <div><dt>rollovers</dt><dd class="num" id="sRoll">0</dd></div>

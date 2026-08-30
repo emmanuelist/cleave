@@ -1,10 +1,10 @@
 /**
  * The trace: pair cost over the session, plotted against the two lines that
- * matter — 1.000 (what a complete set redeems for) and the edge floor the
+ * matter, 1.000 (what a complete set redeems for) and the edge floor the
  * strategy refuses to quote above.
  *
  * This is the chart the product actually needs. You watch the line crawl up
- * toward unity as the market moves, hit the cap, and hold there — which is the
+ * toward unity as the market moves, hit the cap, and hold there, which is the
  * edge floor doing its job, visible rather than asserted.
  */
 const TOP = 1.006, BOT = 0.950;   // window
@@ -61,7 +61,7 @@ export function mountTrace(canvas, opts = {}) {
 
     const vis = pts.filter((p) => p.t >= t0);
     if (vis.length > 1) {
-      // area under the trace, up to unity — the committed cost
+      // area under the trace, up to unity, the committed cost
       ctx.beginPath();
       ctx.moveTo(x(vis[0].t), y(vis[0].pair, H));
       for (const p of vis) ctx.lineTo(x(p.t), y(p.pair, H));
@@ -88,7 +88,7 @@ export function mountTrace(canvas, opts = {}) {
       ctx.fillStyle = "#4fd1c5"; ctx.fill();
     }
 
-    // event marks — fills and rolls, on the timeline they happened
+    // event marks, fills and rolls, on the timeline they happened
     for (const m of marks) {
       if (m.t < t0) continue;
       const mx = x(m.t);

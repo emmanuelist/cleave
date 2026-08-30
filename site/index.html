@@ -3,8 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cleave — buy every outcome for less than one</title>
+<title>Cleave, buy every outcome for less than one</title>
 <meta name="description" content="An automated market maker for DreamDEX Event Contracts on Somnia. It buys both outcomes of a binary market for less than 1, and settlement pays exactly 1.">
+<meta name="theme-color" content="#08090b">
+<link rel="canonical" href="https://emmanuelist.github.io/cleave/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Cleave">
+<meta property="og:title" content="Cleave: buy every outcome for less than one">
+<meta property="og:description" content="A market maker for prediction markets on Somnia. It rests a bid on both outcomes, holds no inventory, and takes no view on the underlying. Settlement pays exactly 1.">
+<meta property="og:url" content="https://emmanuelist.github.io/cleave/">
+<meta property="og:image" content="https://emmanuelist.github.io/cleave/assets/og.png">
+<meta property="og:image:width" content="1440">
+<meta property="og:image:height" content="900">
+<meta property="og:image:alt" content="The Cleave instrument showing a live pair cost below 1.000">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cleave: buy every outcome for less than one">
+<meta name="twitter:description" content="A market maker for prediction markets on Somnia. Settlement pays exactly 1.">
+<meta name="twitter:image" content="https://emmanuelist.github.io/cleave/assets/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2 L14 14 L2 14 Z' fill='%234fd1c5'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,8 +48,21 @@ a:hover{border-bottom-color:var(--under)}
 .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
 .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);margin:0 0 16px}
 
+/* ── Nav ──────────────────────────────────────────────────────────── */
+.nav{position:sticky;top:0;z-index:40;background:rgba(8,9,11,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:56px;gap:24px}
+.nav-mark{display:inline-flex;align-items:center;gap:9px;border:0}
+.nav-mark i{width:9px;height:9px;background:var(--under);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.nav-mark span{font-family:var(--mono);font-weight:600;letter-spacing:.22em;font-size:11px;color:var(--ink)}
+.nav-links{display:flex;align-items:center;gap:22px}
+.nav-links a{font-size:13px;color:var(--dim);border:0}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:7px 13px;border:1px solid var(--hair-lit)!important;color:var(--ink)!important}
+.nav-cta:hover{border-color:var(--under)!important;color:var(--under)!important}
+@media (max-width:720px){.nav-links a:not(.nav-cta){display:none}}
+
 /* ── Hero ─────────────────────────────────────────────────────────── */
-.hero{position:relative;padding:88px 0 64px;overflow:hidden}
+.hero{position:relative;padding:96px 0 72px;overflow:hidden}
 #field{position:absolute;inset:0;width:100%;height:100%;z-index:0}
 .hero .wrap{position:relative;z-index:1}
 .mark{display:inline-flex;align-items:center;gap:11px;margin-bottom:34px}
@@ -96,9 +126,29 @@ td{padding:11px 0;border-bottom:1px solid var(--hair);color:var(--dim)}
 td.num{font-size:12px}
 ul.plain{list-style:none;padding:0;margin:22px 0 0;max-width:66ch}
 ul.plain li{padding:13px 0 13px 20px;border-bottom:1px solid var(--hair);color:var(--dim);font-size:14px;position:relative}
-ul.plain li::before{content:"—";position:absolute;left:0;color:var(--ghost)}
+ul.plain li::before{content:"";position:absolute;left:0;color:var(--ghost)}
 ul.plain b{color:var(--ink);font-weight:500}
-footer{padding:44px 0 60px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:11px;color:var(--ghost);display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+/* ── Video ────────────────────────────────────────────────────────── */
+.video{position:relative;margin-top:30px;padding-top:56.25%;border:1px solid var(--hair);background:var(--panel)}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* ── Close ────────────────────────────────────────────────────────── */
+.close{background:linear-gradient(180deg,transparent,rgba(79,209,197,.035))}
+.close-h{max-width:20ch}
+.close-math{max-width:600px;font-size:13px;line-height:1.95}
+.close .cta{margin-top:30px}
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+footer{border-top:1px solid var(--hair);padding:52px 0 64px;background:rgba(13,15,19,.5)}
+.foot-in{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:34px}
+.foot-col{display:flex;flex-direction:column;gap:9px;min-width:0}
+.foot-col h4{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin:0 0 3px;font-weight:400}
+.foot-col a,.foot-col span{font-size:13px;color:var(--dim);border:0}
+.foot-col a:hover{color:var(--under)}
+.foot-col span{color:var(--ghost);font-family:var(--mono);font-size:11px}
+.foot-mark{margin-bottom:12px}
+.foot-note{font-size:13px;color:var(--mute);max-width:34ch;margin:0}
+@media (max-width:760px){.foot-in{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){
   .live-body{grid-template-columns:1fr}
   .hero{padding:56px 0 44px}
@@ -108,10 +158,22 @@ footer{padding:44px 0 60px;border-top:1px solid var(--hair);font-family:var(--mo
 </head>
 <body>
 
-<header class="hero">
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="nav-mark" href="#top"><i></i><span>CLEAVE</span></a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#instrument">The instrument</a>
+      <a href="#proof">Proof</a>
+      <a href="#limits">Limits</a>
+      <a class="nav-cta" href="https://github.com/emmanuelist/cleave">Source</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
   <canvas id="field" aria-hidden="true"></canvas>
   <div class="wrap">
-    <div class="mark"><i></i><span>CLEAVE</span></div>
     <h1>Buy every outcome for less than one. <b>Settlement pays exactly one.</b></h1>
     <p class="sub">An automated market maker for DreamDEX Event Contracts on Somnia. It rests a bid on
       <em>both</em> outcomes of a binary market, holds no inventory, and takes no view on the underlying.</p>
@@ -123,13 +185,13 @@ footer{padding:44px 0 60px;border-top:1px solid var(--hair);font-family:var(--mo
 
     <div class="live">
       <div class="live-head">
-        <span>LIVE FROM SOMNIA SHANNON — READ IN YOUR BROWSER, NO SERVER</span>
+        <span>LIVE FROM SOMNIA SHANNON, READ IN YOUR BROWSER, NO SERVER</span>
         <span class="dot" id="dot" data-on="false">● <span id="dotText">connecting</span></span>
       </div>
       <dl class="live-body">
-        <div class="cell"><dt>Up bid</dt><dd class="num" id="lUp">—</dd><small id="lMkt">selecting market…</small></div>
-        <div class="cell"><dt>Down bid</dt><dd class="num" id="lDown">—</dd><small>same book, mirrored — 1 minus the Up ask</small></div>
-        <div class="cell edge"><dt>Pair cost → redeems at 1.000</dt><dd class="num" id="lEdge">—</dd><small id="lPair">—</small></div>
+        <div class="cell"><dt>Up bid</dt><dd class="num" id="lUp"></dd><small id="lMkt">selecting market…</small></div>
+        <div class="cell"><dt>Down bid</dt><dd class="num" id="lDown"></dd><small>same book, mirrored, 1 minus the Up ask</small></div>
+        <div class="cell edge"><dt>Pair cost → redeems at 1.000</dt><dd class="num" id="lEdge"></dd><small id="lPair"></small></div>
       </dl>
       <div class="live-foot" id="lFoot">Querying the Somnia indexer directly from this page.</div>
     </div>
@@ -140,7 +202,7 @@ footer{padding:44px 0 60px;border-top:1px solid var(--hair);font-family:var(--mo
   <div class="wrap">
     <p class="eyebrow">The arithmetic</p>
     <h2>An Up share and a Down share are worth exactly one, together, always.</h2>
-    <p>A binary market resolves one way or the other. One outcome pays 1, the other pays 0 — so holding
+    <p>A binary market resolves one way or the other. One outcome pays 1, the other pays 0, so holding
       both is worth <strong>exactly 1 at settlement, whatever happens in the world</strong>. Buy the pair
       for less than that and the difference is yours. No price move can take it, because you are not
       exposed to price.</p>
@@ -153,37 +215,50 @@ pair       <span class="u">0.972</span>   redeems at 1.000   →  2.8pp, no dire
     <div class="grid3">
       <div>
         <h3>Two bids, never a sell</h3>
-        <p>Selling an outcome you don't own reverts — there is no naked short. Buying both needs only
+        <p>Selling an outcome you don't own reverts. There is no naked short. Buying both needs only
           collateral, and the venue mints the pair when two opposite-side buyers cross. So the maker
           never holds inventory.</p>
       </div>
       <div>
         <h3>An edge floor, not a chase</h3>
         <p>The order book includes your own resting order, so quoting one tick inside the best bid means
-          outbidding yourself — a ratchet that walks the edge to zero. Quotes are capped so a pair never
+          outbidding yourself, a ratchet that walks the edge to zero. Quotes are capped so a pair never
           costs more than the floor allows.</p>
       </div>
       <div>
         <h3>Leg risk, handled out loud</h3>
         <p>If one bid fills and the other doesn't, you're briefly exposed. The loop completes the pair by
-          crossing — but only while the total stays under 1. Above that it holds the position and says so.</p>
+          crossing, but only while the total stays under 1. Above that it holds the position and says so.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="band">
+<section class="band" id="instrument">
   <div class="wrap">
     <p class="eyebrow">The instrument</p>
     <h2>The gap is the number.</h2>
     <p>Up and Down stack toward a fixed 1.000 and the space left over <em>is</em> the edge. That gap is
-      genuinely one to three points, so a true-scale column shows a sliver — and rather than inflate it,
+      genuinely one to three points, so a true-scale column shows a sliver. Rather than inflate it,
       a vernier expands the last five points alongside, where the same quantity is legible. Coarse for
       honesty, fine for reading.</p>
     <figure style="margin-top:30px">
-      <img src="../docs/shots/live-1440.png" alt="The Cleave instrument: unity line, vernier, live session trace, order books and activity log">
-      <figcaption>Live testnet. Every figure comes from the chain — there is no demo mode and no seeded fixture.</figcaption>
+      <img src="assets/instrument.png" width="1440" height="900" loading="lazy" alt="The Cleave instrument: unity line, vernier, live session trace, order books and activity log">
+      <figcaption>Live testnet. Every figure comes from the chain. There is no demo mode and no seeded fixture.</figcaption>
     </figure>
+  </div>
+</section>
+
+<!-- DEMO VIDEO: set VIDEO_URL in the script at the bottom of this file to a
+     YouTube or Loom embed URL. The section stays hidden until you do, so the
+     page never shows an empty player. -->
+<section class="band" id="demo" hidden>
+  <div class="wrap">
+    <p class="eyebrow">Three minutes</p>
+    <h2>Watch it trade.</h2>
+    <p>Live on testnet: quotes resting on both outcomes, a leg filling, the pair
+      being completed, and settlement paying out.</p>
+    <div class="video"><iframe id="videoFrame" title="Cleave demo" allowfullscreen loading="lazy"></iframe></div>
   </div>
 </section>
 
@@ -195,25 +270,25 @@ pair       <span class="u">0.972</span>   redeems at 1.000   →  2.8pp, no dire
     <table>
       <thead><tr><th>What</th><th>Transaction</th></tr></thead>
       <tbody>
-        <tr><td>Complete set minted — 1 tUSDC → 1 Up + 1 Down</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x63fa4e26d06c9aab9a5d385110b9ddad82b9651b55a97bf14b89f3c3cd1a4842">0x63fa4e26</a></td></tr>
-        <tr><td>Merged back — exact, no leakage</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x210c57e47e732a348bb040b3e90cce6dd4bfa36ac9879b82394809682fec8ea1">0x210c57e4</a></td></tr>
+        <tr><td>Complete set minted, 1 tUSDC → 1 Up + 1 Down</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x63fa4e26d06c9aab9a5d385110b9ddad82b9651b55a97bf14b89f3c3cd1a4842">0x63fa4e26</a></td></tr>
+        <tr><td>Merged back, exact, no leakage</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x210c57e47e732a348bb040b3e90cce6dd4bfa36ac9879b82394809682fec8ea1">0x210c57e4</a></td></tr>
         <tr><td>First maker order resting</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x29f610342a8c9e70880a0d148da2d551d82845e353f8655bfd68f3f0d32b4e8c">0x29f61034</a></td></tr>
         <tr><td>Up leg filled</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x6b1de65d4066ecc1cb0513c12658909d88f6c74f41eebba65498aedc6440e7a1">0x6b1de65d</a></td></tr>
         <tr><td>Down leg filled</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x339a41025d67ac75b4345b81431ea9a57acb2972746a0c1539f59a418dbee3f8">0x339a4102</a></td></tr>
-        <tr><td>Winnings redeemed — <strong>+20.000 tUSDC</strong></td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0xb785b4f03a6f0fcc68be476ad4dd617dd667ef21d6d3fac1531d91cb1116afd3">0xb785b4f0</a></td></tr>
+        <tr><td>Winnings redeemed, <strong>+20.000 tUSDC</strong></td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0xb785b4f03a6f0fcc68be476ad4dd617dd667ef21d6d3fac1531d91cb1116afd3">0xb785b4f0</a></td></tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<section class="band">
+<section class="band" id="limits">
   <div class="wrap">
     <p class="eyebrow">Limits</p>
     <h2>What this isn't.</h2>
     <p>Stated plainly, because they're the first things worth asking.</p>
     <ul class="plain">
       <li><b>Testnet only.</b> Somnia Shannon, chain 50312, tUSDC. Unaudited, not on mainnet, not handling real money.</li>
-      <li><b>The venue has almost no organic flow.</b> Spreads sit in a narrow band across every market with near-identical depth — that's one fixed-width quoter, not a market. These numbers would not survive real adversarial flow, and we don't claim otherwise.</li>
+      <li><b>The venue has almost no organic flow.</b> Spreads sit in a narrow band across every market with near-identical depth, that's one fixed-width quoter, not a market. These numbers would not survive real adversarial flow, and we don't claim otherwise.</li>
       <li><b>Some fills were bought deliberately.</b> To exercise settlement we crossed both books once, paying the spread on purpose. That trade is in the history above, at a loss.</li>
       <li><b>No on-chain reactivity.</b> Somnia's on-chain reactivity needs a ~32 SOM subscription balance; this project runs at zero cost, so liveness uses the node's WebSocket feed. A deliberate trade, not an oversight.</li>
       <li><b>One market at a time.</b> The loop quotes a single series. Concurrent series is the obvious extension and isn't built.</li>
@@ -221,15 +296,55 @@ pair       <span class="u">0.972</span>   redeems at 1.000   →  2.8pp, no dire
   </div>
 </section>
 
-<footer class="wrap">
-  <span>Somnia Shannon · chain 50312 · tUSDC</span>
-  <span>Somnia × DreamDEX Event Contracts Hackathon · MIT</span>
+<section class="band close">
+  <div class="wrap">
+    <h2 class="close-h">Run it against the live venue in about two minutes.</h2>
+    <div class="math close-math">npm install
+npm run newkey        <span class="u"># fresh testnet key</span>
+npm run fund          <span class="u"># SDK mints its own collateral</span>
+npm run serve --live  <span class="u"># instrument on :5173</span></div>
+    <div class="cta">
+      <a class="btn pri" href="https://github.com/emmanuelist/cleave">Read the source</a>
+      <a class="btn" href="https://github.com/emmanuelist/cleave/blob/main/docs/preflight-baseline.md">The working log</a>
+      <a class="btn" href="https://dorahacks.io/hackathon/event-contracts/detail">The hackathon</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div class="foot-col">
+      <div class="mark foot-mark"><i></i><span>CLEAVE</span></div>
+      <p class="foot-note">Buy every outcome for less than one. Settlement pays exactly one.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Project</h4>
+      <a href="https://github.com/emmanuelist/cleave">Source</a>
+      <a href="https://github.com/emmanuelist/cleave/blob/main/README.md">README</a>
+      <a href="https://github.com/emmanuelist/cleave/blob/main/docs/preflight-baseline.md">Working log</a>
+      <a href="https://github.com/emmanuelist/cleave/blob/main/docs/run-of-show.md">Demo script</a>
+    </div>
+    <div class="foot-col">
+      <h4>Venue</h4>
+      <a href="https://docs.dreamdex.io/developers/event-contracts">DreamDEX docs</a>
+      <a href="https://docs.somnia.network">Somnia docs</a>
+      <a href="https://shannon-explorer.somnia.network/address/0x068bc3d79326b19068b3783714103c2be6eaB65E">Our wallet</a>
+      <a href="https://github.com/somnia-chain/dreamdex-bot-kit">Bot Kit</a>
+    </div>
+    <div class="foot-col">
+      <h4>Network</h4>
+      <span>Somnia Shannon</span>
+      <span>chain 50312</span>
+      <span>tUSDC collateral</span>
+      <span>MIT licence</span>
+    </div>
+  </div>
 </footer>
 
 <script type="module">
 const INDEXER = "https://dev.smk.somnia.host/v1/graphql";
 const $ = (id) => document.getElementById(id);
-const f3 = (n) => (n == null ? "—" : n.toFixed(3));
+const f3 = (n) => (n == null ? "" : n.toFixed(3));
 
 async function gql(query) {
   const r = await fetch(INDEXER, {
@@ -248,7 +363,7 @@ async function readLive() {
   const mkt = m.Market?.[0];
   if (!mkt) throw new Error("no market currently trading");
 
-  // One book, two sides — and it is expressed entirely in YES terms. There is
+  // One book, two sides, and it is expressed entirely in YES terms. There is
   // no BUY_NO row anywhere: a bid for Down IS an ask for Up, mirrored. So the
   // Down bid is 1 minus the best (lowest) SELL_YES. This is the venue mechanic
   // visible in the raw data, not an interpretation.
@@ -280,12 +395,12 @@ async function tick() {
       $("lEdge").textContent = `${(edge * 100).toFixed(1)}pp`;
       $("lPair").textContent = `pair ${f3(pair)} · redeems 1.000`;
       $("lFoot").textContent = edge > 0
-        ? `Both outcomes for ${f3(pair)}. Settlement pays 1.000 whichever way it resolves — that difference is the edge, and it carries no directional risk.`
-        : `Pair costs ${f3(pair)} against a redemption of 1.000. No edge right now — the strategy would stand aside.`;
+        ? `Both outcomes for ${f3(pair)}. Settlement pays 1.000 whichever way it resolves. That difference is the edge, and it carries no directional risk.`
+        : `Pair costs ${f3(pair)} against a redemption of 1.000. No edge right now. The strategy would stand aside.`;
     } else {
-      $("lEdge").textContent = "—";
+      $("lEdge").textContent = "";
       $("lPair").textContent = "one side has no resting bid";
-      $("lFoot").textContent = "The book is one-sided right now. This is what the venue actually looks like between quotes — not a placeholder.";
+      $("lFoot").textContent = "The book is one-sided right now. This is what the venue actually looks like between quotes, not a placeholder.";
     }
     ok = true;
   } catch (e) {
@@ -297,7 +412,19 @@ async function tick() {
 }
 tick(); setInterval(tick, 12000);
 
-/* Hero field — the same breathing volume as the instrument, lighter. */
+/* Demo video. Put the embed URL here once recorded; the section reveals itself.
+   Leave it empty and the page simply does not show an empty player. */
+const VIDEO_URL = "";
+if (VIDEO_URL) {
+  $("videoFrame").src = VIDEO_URL;
+  document.getElementById("demo").hidden = false;
+  // Reveal its nav entry too.
+  const l = document.createElement("a");
+  l.href = "#demo"; l.textContent = "Demo";
+  document.querySelector(".nav-links").prepend(l);
+}
+
+/* Hero field, the same breathing volume as the instrument, lighter. */
 const cv = $("field");
 if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
   const g = cv.getContext("2d");
