@@ -15,7 +15,8 @@
     "maker": "tsx scripts/maker.ts",
     "set": "tsx scripts/set.ts",
     "fill": "tsx scripts/fill.ts",
-    "claim": "tsx scripts/claim.ts"
+    "claim": "tsx scripts/claim.ts",
+    "serve": "tsx scripts/serve.ts"
   },
   "dependencies": {
     "@somnia-chain/markets-sdk": "0.27.0",

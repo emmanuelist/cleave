@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cleave</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2 L14 14 L2 14 Z' fill='%234fd1c5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="name">CLEAVE</span>
+    <span class="claim">Buy every outcome for less than one. Settlement pays exactly one.</span>
+  </div>
+  <div class="bar-right">
+    <span class="market" id="market">—</span>
+    <span class="countdown" id="countdown">—</span>
+    <span class="mode" id="mode" data-live="false">READ-ONLY</span>
+  </div>
+</header>
+
+<main>
+  <!-- ── The Unity Line ─────────────────────────────────────────────── -->
+  <section class="unity" aria-labelledby="unity-h">
+    <h2 id="unity-h" class="eyebrow">The unity line</h2>
+
+    <div class="unity-body">
+      <!-- Coarse: the true unit interval, to scale. The edge is a sliver, and
+           showing it as one is the honest thing to do. -->
+      <div class="scale" aria-hidden="true">
+        <span style="--at:0">1.000</span>
+        <span style="--at:.25">0.750</span>
+        <span style="--at:.5">0.500</span>
+        <span style="--at:.75">0.250</span>
+        <span style="--at:1">0.000</span>
+      </div>
+      <div class="column" id="column">
+        <div class="gap" id="gap"></div>
+        <div class="seg seg-down" id="segDown"><span class="seg-label">DOWN <b id="pDown">—</b></span></div>
+        <div class="seg seg-up" id="segUp"><span class="seg-label">UP <b id="pUp">—</b></span></div>
+      </div>
+
+      <!-- Vernier: the last five points, expanded, where the gap is legible.
+           Same number, readable scale — how an instrument shows a fine reading. -->
+      <div class="vernier">
+        <div class="v-track">
+          <div class="v-paid" id="vPaid"></div>
+          <div class="v-rule v-unity"><span>1.000</span></div>
+          <div class="v-gap" id="vGap"></div>
+          <div class="v-rule v-pair" id="vPair"><span id="vPairVal">—</span></div>
+          <div class="v-floor"><span>0.950</span></div>
+        </div>
+        <div class="v-read">
+          <span class="edge-num" id="edge">—</span>
+          <span class="edge-unit">pp edge per pair</span>
+          <dl class="readout">
+            <div><dt>Up bid</dt><dd id="rUp" class="num">—</dd></div>
+            <div><dt>Down bid</dt><dd id="rDown" class="num">—</dd></div>
+            <div class="sum"><dt>Pair cost</dt><dd id="rPair" class="num">—</dd></div>
+            <div><dt>Redeems at</dt><dd class="num muted">1.000</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <p class="verdict" id="verdict" data-state="idle">Acquiring market…</p>
+  </section>
+
+  <div class="rail">
+  <!-- ── Books ──────────────────────────────────────────────────────── -->
+  <section class="books" aria-labelledby="books-h">
+    <h2 id="books-h" class="eyebrow">Resting bids <span class="hint">ours marked</span></h2>
+    <div class="book-pair">
+      <div class="book">
+        <div class="book-head"><span>UP</span><span class="num" id="bUpTop">—</span></div>
+        <ol id="bUp" class="levels"></ol>
+      </div>
+      <div class="book">
+        <div class="book-head"><span>DOWN</span><span class="num" id="bDownTop">—</span></div>
+        <ol id="bDown" class="levels"></ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Position ───────────────────────────────────────────────────── -->
+  <section class="position" aria-labelledby="pos-h">
+    <h2 id="pos-h" class="eyebrow">Position</h2>
+    <div class="pos-grid">
+      <div><span class="pos-k">Up</span><span class="num pos-v" id="posUp">0</span></div>
+      <div><span class="pos-k">Down</span><span class="num pos-v" id="posDown">0</span></div>
+    </div>
+    <p class="pos-state" id="posState" data-state="flat">flat — no exposure</p>
+    <dl class="stats">
+      <div><dt>reprices</dt><dd class="num" id="sRe">0</dd></div>
+      <div><dt>rollovers</dt><dd class="num" id="sRoll">0</dd></div>
+      <div><dt>leg events</dt><dd class="num" id="sLeg">0</dd></div>
+    </dl>
+  </section>
+
+  <!-- ── Lineage ────────────────────────────────────────────────────── -->
+  <section class="lineage" aria-labelledby="lin-h">
+    <h2 id="lin-h" class="eyebrow">Lineage <span class="hint">markets expire every ~2 min</span></h2>
+    <ol id="lineage" class="lin-list"><li class="lin-empty">No markets yet</li></ol>
+  </section>
+
+  </div>
+
+  <!-- ── Events ─────────────────────────────────────────────────────── -->
+  <section class="events" aria-labelledby="ev-h">
+    <h2 id="ev-h" class="eyebrow">Activity</h2>
+    <ol id="events" class="ev-list"><li class="ev-empty">Waiting for the engine…</li></ol>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>Somnia Shannon testnet · chain 50312 · tUSDC</span>
+  <span id="conn" class="conn" data-on="false">disconnected</span>
+</footer>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>

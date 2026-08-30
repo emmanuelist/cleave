@@ -1,0 +1,294 @@
+/* ── Tokens ────────────────────────────────────────────────────────────
+   Colour is derived from the mechanic, not from a palette. The product asks
+   one question — where does the pair sit relative to 1.000 — so the states
+   are UNDER (edge exists, quote it), AT (no edge, stand aside) and OVER
+   (guaranteed loss, never quote). Lifecycle states follow the same rule.
+   None of these could move to another product: nothing else redeems at
+   exactly one.
+   ------------------------------------------------------------------- */
+:root {
+  --ground:   #08090b;
+  --panel:    #0d0f13;
+  --raised:   #12151a;
+  --hair:     #1b1f27;
+  --hair-lit: #2a3038;
+
+  --ink:      #e8ebf0;
+  --ink-dim:  #8b93a1;
+  --ink-mute: #5a6270;
+
+  /* the mechanic */
+  --under:    #4fd1c5;   /* pair < 1 — there is edge here */
+  --under-lo: #4fd1c51a;
+  --at:       #8b93a1;   /* pair = 1 — nothing to take */
+  --over:     #d97757;   /* pair > 1 — never quote */
+
+  /* lifecycle */
+  --resting:  #6b7fa8;
+  --paired:   #4fd1c5;
+  --naked:    #e0b341;
+  --rolled:   #3a414d;
+
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font-family: var(--sans); font-size: 13px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+}
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ── Chrome ─────────────────────────────────────────────────────────── */
+.bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  padding: 0 20px; height: 52px; border-bottom: 1px solid var(--hair);
+  background: var(--panel);
+}
+.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.mark {
+  width: 9px; height: 9px; align-self: center; flex: none;
+  background: var(--under); clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.name { font-family: var(--mono); font-weight: 600; letter-spacing: 0.18em; font-size: 12px; }
+.claim {
+  color: var(--ink-dim); font-size: 12px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.bar-right { display: flex; align-items: center; gap: 16px; flex: none; }
+.market { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+.countdown { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+.mode {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  padding: 3px 7px; border: 1px solid var(--hair-lit); color: var(--ink-mute);
+}
+.mode[data-live="true"] { color: var(--under); border-color: var(--under); }
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+/* Hero and rail. The unity line is the argument, so it gets the width; the
+   rail carries state that supports it. Activity runs full width beneath the
+   hero because it is the surface that grows as the session runs. */
+main {
+  display: grid; gap: 1px; background: var(--hair);
+  grid-template-columns: minmax(560px, 1fr) minmax(300px, 380px);
+  grid-template-rows: 1fr minmax(150px, 210px);
+  grid-template-areas: "unity rail" "events rail";
+  height: calc(100vh - 52px - 30px);
+}
+.rail { grid-area: rail; display: grid; grid-template-rows: auto auto 1fr; gap: 1px;
+        background: var(--hair); padding: 0; }
+.rail > section { padding: 16px 18px; }
+section { background: var(--panel); padding: 16px 18px; min-width: 0; overflow: hidden; }
+.unity  { grid-area: unity; display: flex; flex-direction: column; }
+.events { grid-area: events; display: flex; flex-direction: column; min-height: 0; position: relative; }
+/* The log outruns its strip within a minute of going live; fade the cut so it
+   reads as "more below" rather than as a clipped row. */
+.events::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 28px;
+  background: linear-gradient(transparent, var(--panel)); pointer-events: none;
+}
+
+.eyebrow {
+  margin: 0 0 14px; font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mute);
+  display: flex; align-items: baseline; gap: 8px;
+}
+.hint { text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 11px; color: var(--rolled); }
+
+/* ── The Unity Line ─────────────────────────────────────────────────
+   The signature, in two registers. The coarse column is the true unit
+   interval: Up and Down stack toward 1.000 and the leftover space is the
+   edge — which is genuinely a sliver, and is drawn as one. The vernier
+   beside it expands the last five points so the same quantity can actually
+   be read. Coarse for honesty, fine for legibility; that is how a measuring
+   instrument works, and this product is one.
+
+   Heights are PERCENTAGES of a bounded column. Driving them from
+   clientHeight in px creates a feedback loop, because the column's height
+   comes from its children.
+   ----------------------------------------------------------------- */
+.unity-body { display: grid; grid-template-columns: 44px 110px 1fr; gap: 16px; flex: 1; min-height: 0; }
+
+.scale { position: relative; font-family: var(--mono); font-size: 10px; color: var(--rolled); }
+.scale span { position: absolute; right: 0; top: calc(var(--at) * 100%); transform: translateY(-50%); }
+
+.column {
+  position: relative; height: 100%; display: flex; flex-direction: column;
+  border-left: 1px solid var(--hair-lit); border-bottom: 1px solid var(--hair-lit);
+}
+.gap {
+  flex: none; height: 0; min-height: 1px;
+  background: repeating-linear-gradient(-45deg, var(--under-lo) 0 5px, transparent 5px 10px);
+  border-bottom: 1px solid var(--under);
+  transition: height .5s cubic-bezier(.2,.7,.2,1);
+}
+.seg {
+  flex: none; height: 0; position: relative; overflow: hidden;
+  transition: height .5s cubic-bezier(.2,.7,.2,1);
+  display: flex; align-items: flex-start; padding: 4px 7px;
+}
+.seg-down { background: linear-gradient(180deg,#1a2030,#151a26); border-bottom: 1px solid var(--hair-lit); }
+.seg-up   { background: linear-gradient(180deg,#17232b,#131c23); }
+.seg-label { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--ink-dim); white-space: nowrap; }
+.seg-label b { color: var(--ink); font-weight: 500; margin-left: 4px; }
+
+/* Vernier — 0.950 → 1.000 expanded twentyfold */
+.vernier { display: grid; grid-template-columns: 132px minmax(0, 300px); gap: 22px; min-height: 0; justify-content: start; }
+.v-track {
+  position: relative; overflow: hidden; height: 100%; border-left: 1px solid var(--hair-lit);
+  background: linear-gradient(180deg, var(--raised), transparent 70%);
+}
+.v-rule { position: absolute; left: 0; right: 0; height: 0; }
+.v-rule span {
+  position: absolute; left: 8px; top: -14px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .02em;
+}
+.v-unity { top: 0; border-top: 1px solid var(--ink-dim); }
+.v-unity span { color: var(--ink-dim); top: 4px; }
+.v-pair { top: 0; border-top: 1px solid var(--under); transition: top .5s cubic-bezier(.2,.7,.2,1); }
+.v-pair span { color: var(--under); }
+.v-paid {
+  position: absolute; left: 0; right: 0; bottom: 0; top: 0;
+  background: var(--raised); transition: top .5s cubic-bezier(.2,.7,.2,1);
+}
+.v-floor { position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px dashed var(--hair-lit); }
+.v-floor span { position: absolute; left: 8px; top: 4px; font-family: var(--mono); font-size: 10px; color: var(--rolled); }
+.v-gap {
+  position: absolute; left: 0; right: 0; top: 0; height: 0;
+  background: repeating-linear-gradient(-45deg, var(--under-lo) 0 5px, transparent 5px 10px);
+  border-bottom: 0; transition: height .5s cubic-bezier(.2,.7,.2,1);
+}
+
+.v-read { align-self: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; width: 100%; }
+.edge-num {
+  font-family: var(--mono); font-size: clamp(34px, 4.4vw, 58px); font-weight: 500;
+  color: var(--under); letter-spacing: -0.035em; line-height: 1;
+}
+.edge-unit { font-family: var(--mono); font-size: 10px; letter-spacing: .13em; color: var(--under); opacity: .6; }
+
+.readout { margin: 18px 0 0; display: grid; gap: 8px; }
+.readout div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.readout dt { color: var(--ink-mute); font-size: 11px; }
+.readout dd { margin: 0; font-size: 13px; }
+.readout .sum { border-top: 1px solid var(--hair); padding-top: 8px; }
+.readout .sum dd { color: var(--under); }
+.muted { color: var(--ink-mute); }
+
+.verdict {
+  margin: 12px 0 0; max-width: 78ch; padding-top: 11px; border-top: 1px solid var(--hair);
+  font-size: 12px; color: var(--ink-dim); flex: none;
+}
+.verdict[data-state="under"] { color: var(--ink); }
+.verdict[data-state="over"]  { color: var(--over); }
+.verdict[data-state="idle"]  { color: var(--ink-mute); }
+
+/* ── Books ──────────────────────────────────────────────────────────── */
+.book-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.book-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  color: var(--ink-mute); padding-bottom: 6px; border-bottom: 1px solid var(--hair);
+}
+.book-head .num { color: var(--ink); font-size: 12px; letter-spacing: 0; }
+.levels { list-style: none; margin: 6px 0 0; padding: 0; }
+.levels li {
+  position: relative; display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
+  padding: 3px 4px; isolation: isolate;
+}
+.levels li::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; z-index: -1;
+  width: calc(var(--w, 0) * 100%); background: #1a2433; opacity: .55;
+}
+.levels li.mine { color: var(--under); }
+.levels li.mine::before { background: var(--under); opacity: .13; }
+.levels li.mine::after {
+  content: "◂ ours"; position: absolute; right: -2px; top: 3px;
+  font-size: 9px; letter-spacing: .06em; color: var(--under); opacity: .8;
+}
+.levels .empty { color: var(--rolled); justify-content: flex-start; }
+
+/* ── Position ───────────────────────────────────────────────────────── */
+.pos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pos-grid div { display: flex; flex-direction: column; gap: 2px; }
+.pos-k { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: var(--ink-mute); }
+.pos-v { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; }
+.pos-state { margin: 12px 0 0; font-size: 11px; font-family: var(--mono); }
+.pos-state[data-state="flat"]  { color: var(--ink-mute); }
+.pos-state[data-state="paired"]{ color: var(--paired); }
+.pos-state[data-state="naked"] { color: var(--naked); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0 0;
+         padding-top: 12px; border-top: 1px solid var(--hair); }
+.stats div { display: flex; flex-direction: column; gap: 1px; }
+.stats dt { font-size: 10px; color: var(--ink-mute); }
+.stats dd { margin: 0; font-size: 15px; }
+
+/* ── Lineage ────────────────────────────────────────────────────────
+   Markets die every two minutes. Expired ones recede rather than vanish —
+   liveness you cannot fake with a fixture.
+   ----------------------------------------------------------------- */
+.lin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.lin-list li {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--mono); font-size: 11px; padding: 3px 0;
+  border-left: 2px solid var(--rolled); padding-left: 9px;
+}
+.lin-list li.active { border-left-color: var(--under); color: var(--ink); }
+.lin-list li.rolled { color: var(--rolled); }
+.lin-list li .sym { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lin-list li .tag { margin-left: auto; font-size: 9px; letter-spacing: .1em; flex: none; }
+.lin-empty, .ev-empty { color: var(--rolled); font-family: var(--mono); font-size: 11px; border: 0 !important; padding-left: 0 !important; }
+
+/* ── Events ─────────────────────────────────────────────────────────── */
+.ev-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px;
+           align-content: start; flex: 1; min-height: 0; overflow-y: auto; }
+.ev-list li { display: grid; grid-template-columns: 60px 46px 1fr; gap: 10px;
+              font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+.ev-list .t { color: var(--rolled); }
+.ev-list .k { letter-spacing: .08em; font-size: 9px; padding-top: 2px; }
+.ev-list li[data-k="leg"]  .k { color: var(--naked); }
+.ev-list li[data-k="fill"] .k { color: var(--paired); }
+.ev-list li[data-k="roll"] .k { color: var(--resting); }
+.ev-list li[data-k="post"] .k { color: var(--ink-mute); }
+.ev-list li[data-k="note"] .k { color: var(--rolled); }
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+.foot {
+  height: 30px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; border-top: 1px solid var(--hair); background: var(--panel);
+  font-family: var(--mono); font-size: 10px; color: var(--rolled);
+}
+.conn::before { content: "○ "; }
+.conn[data-on="true"] { color: var(--under); }
+.conn[data-on="true"]::before { content: "● "; }
+
+/* ── Responsive ─────────────────────────────────────────────────────
+   Not a shrunken desktop. On narrow screens the unity line stays first and
+   full-width — it is the whole argument — books follow, and the activity log
+   drops to the end where it can scroll.
+   ----------------------------------------------------------------- */
+@media (max-width: 1100px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-areas: "unity" "rail" "events";
+    grid-template-rows: minmax(340px, auto) auto auto; height: auto;
+  }
+  .rail { grid-template-rows: none; grid-template-columns: 1fr 1fr; }
+  .rail > .lineage { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .claim { display: none; }
+  main { grid-template-columns: 1fr; grid-template-areas: "unity" "rail" "events"; }
+  .rail { grid-template-columns: 1fr; }
+  .unity-body { grid-template-columns: 36px 74px 1fr; gap: 10px; }
+  .vernier { grid-template-columns: 1fr; gap: 10px; }
+  .v-track { min-height: 96px; }
+  .v-read { align-self: start; }
+  .edge-num { font-size: 38px; }
+  .readout { margin-top: 10px; }
+  .bar { height: auto; padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+}
