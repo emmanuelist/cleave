@@ -402,3 +402,43 @@ Pinned at the floor while the book moved under it. `*` marks a capped quote.
 **The general lesson, and the one worth saying out loud in the demo:** the edge
 is the product. Queue position is not worth paying for with it. A maker that
 chases is just a taker with extra steps.
+
+---
+
+# First fills — 2026-08-30
+
+Nothing took our passive quotes across ~6 minutes of live quoting, which matches
+the spread survey's read: the only other participant is a fixed-width bot and
+there is no organic flow to catch. So the fill was **forced deliberately**, and
+that is stated wherever the result appears.
+
+```
+market   ETH-0-30AUG26-1200-DCD3/tUSDC     marketId 0x…dcd3
+Up ask   0.323      Down ask 0.705      pair 1.028
+
+Up    IOC  filled 5   0x6b1de65d4066ecc1cb0513c12658909d88f6c74f41eebba65498aedc6440e7a1
+Down  IOC  filled 5   0x339a41025d67ac75b4345b81431ea9a57acb2972746a0c1539f59a418dbee3f8
+```
+
+We crossed **both** books. Crossing costs the spread — `upAsk + downAsk = 1.028`
+against a set worth exactly 1.000, so this is a deliberate 0.140 tUSDC loss on 5
+sets. Worth it, because holding a complete set makes settlement deterministic:
+it redeems for exactly 1 whichever way ETH goes, so the claim path can be tested
+without a coin flip on a naked leg.
+
+**This is the inverse of the strategy, run on purpose.** Cleave posts and waits
+to be paid the spread; here we paid it, to manufacture a settled position.
+
+## Claim path
+
+`listPastBinaryMarkets` is not exported at the package root. It does not need to
+be — `loadMarkets(true)` returns all 569 indexed markets and settled ones leave
+the *live* list, not the registry. `claim.ts` filters to inactive binary markets,
+reads ERC-6909 outcome balances via `outcomeId(pool, nonce, idx)`, feeds
+`claimableFrom`, and redeems with `redeemMany`.
+
+Dry run confirms it scans and reports correctly (0 holdings while our market is
+still live). Settlement is at ~11:53 UTC; the redeem runs after that.
+
+Note `ClaimableInput` requires `settlementFeeBps`, which is not obvious from the
+name — it is on the market row as a nullable string.

@@ -13,7 +13,9 @@
     "balance": "tsx scripts/balance.ts",
     "quote": "tsx scripts/quote.ts",
     "maker": "tsx scripts/maker.ts",
-    "set": "tsx scripts/set.ts"
+    "set": "tsx scripts/set.ts",
+    "fill": "tsx scripts/fill.ts",
+    "claim": "tsx scripts/claim.ts"
   },
   "dependencies": {
     "@somnia-chain/markets-sdk": "0.27.0",
