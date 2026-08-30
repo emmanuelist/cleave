@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cleave — buy every outcome for less than one</title>
+<meta name="description" content="An automated market maker for DreamDEX Event Contracts on Somnia. It buys both outcomes of a binary market for less than 1, and settlement pays exactly 1.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2 L14 14 L2 14 Z' fill='%234fd1c5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#08090b; --panel:#0d0f13; --raised:#12151a;
+  --hair:#1b1f27; --hair-lit:#2a3038;
+  --ink:#e8ebf0; --dim:#8b93a1; --mute:#5a6270; --ghost:#3a414d;
+  --under:#4fd1c5; --over:#d97757; --naked:#e0b341;
+  --mono:"Azeret Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--sans);font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
+}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+a{color:var(--under);text-decoration:none;border-bottom:1px solid rgba(79,209,197,.28)}
+a:hover{border-bottom-color:var(--under)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);margin:0 0 16px}
+
+/* ── Hero ─────────────────────────────────────────────────────────── */
+.hero{position:relative;padding:88px 0 64px;overflow:hidden}
+#field{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.hero .wrap{position:relative;z-index:1}
+.mark{display:inline-flex;align-items:center;gap:11px;margin-bottom:34px}
+.mark i{width:11px;height:11px;background:var(--under);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.mark span{font-family:var(--mono);font-weight:600;letter-spacing:.24em;font-size:12px}
+h1{
+  font-family:var(--mono);font-weight:400;letter-spacing:-.045em;
+  font-size:clamp(30px,5.2vw,58px);line-height:1.08;margin:0 0 22px;max-width:19ch;
+}
+h1 b{font-weight:500;color:var(--under)}
+.sub{font-size:17px;color:var(--dim);max-width:56ch;margin:0 0 38px}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.btn{
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;padding:11px 18px;
+  border:1px solid var(--hair-lit);color:var(--ink);border-bottom-color:var(--hair-lit);
+}
+.btn:hover{border-color:var(--under);color:var(--under)}
+.btn.pri{border-color:var(--under);color:var(--under);background:rgba(79,209,197,.07)}
+
+/* ── Live readout ─────────────────────────────────────────────────── */
+.live{
+  margin-top:52px;border:1px solid var(--hair);background:rgba(13,15,19,.72);
+  backdrop-filter:blur(8px);
+}
+.live-head{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:12px 18px;border-bottom:1px solid var(--hair);
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mute);
+}
+.dot{color:var(--under)}
+.dot[data-on="false"]{color:var(--ghost)}
+.live-body{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:1px;background:var(--hair)}
+.cell{background:var(--panel);padding:18px}
+.cell dt{font-size:11px;color:var(--mute);margin-bottom:7px}
+.cell dd{margin:0;font-family:var(--mono);font-size:27px;letter-spacing:-.03em}
+.cell.edge dd{color:var(--under);font-size:34px;text-shadow:0 0 26px rgba(79,209,197,.4)}
+.cell small{display:block;font-size:11px;color:var(--mute);margin-top:6px;font-family:var(--sans);letter-spacing:0}
+.live-foot{padding:11px 18px;border-top:1px solid var(--hair);font-size:12px;color:var(--mute)}
+
+/* ── Sections ─────────────────────────────────────────────────────── */
+section.band{padding:74px 0;border-top:1px solid var(--hair)}
+h2{font-family:var(--mono);font-weight:400;font-size:clamp(21px,2.6vw,29px);letter-spacing:-.03em;margin:0 0 18px}
+p{max-width:64ch;color:var(--dim)}
+p strong{color:var(--ink);font-weight:500}
+.math{
+  font-family:var(--mono);font-size:14px;line-height:2;margin:30px 0;
+  border-left:2px solid var(--under);padding:16px 20px;background:var(--raised);
+  overflow-x:auto;white-space:pre;color:var(--ink);
+}
+.math .u{color:var(--under)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1px;background:var(--hair);margin-top:34px}
+.grid3 > div{background:var(--panel);padding:22px}
+.grid3 h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--under);margin:0 0 10px;font-weight:500}
+.grid3 p{font-size:14px;margin:0}
+figure{margin:0}
+figure img{width:100%;display:block;border:1px solid var(--hair)}
+figcaption{font-size:12px;color:var(--mute);margin-top:11px;font-family:var(--mono);letter-spacing:-.01em}
+table{width:100%;border-collapse:collapse;margin-top:22px;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:400;padding:0 0 10px;border-bottom:1px solid var(--hair)}
+td{padding:11px 0;border-bottom:1px solid var(--hair);color:var(--dim)}
+td.num{font-size:12px}
+ul.plain{list-style:none;padding:0;margin:22px 0 0;max-width:66ch}
+ul.plain li{padding:13px 0 13px 20px;border-bottom:1px solid var(--hair);color:var(--dim);font-size:14px;position:relative}
+ul.plain li::before{content:"—";position:absolute;left:0;color:var(--ghost)}
+ul.plain b{color:var(--ink);font-weight:500}
+footer{padding:44px 0 60px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:11px;color:var(--ghost);display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+@media (max-width:760px){
+  .live-body{grid-template-columns:1fr}
+  .hero{padding:56px 0 44px}
+}
+@media (prefers-reduced-motion:reduce){#field{display:none}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <canvas id="field" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="mark"><i></i><span>CLEAVE</span></div>
+    <h1>Buy every outcome for less than one. <b>Settlement pays exactly one.</b></h1>
+    <p class="sub">An automated market maker for DreamDEX Event Contracts on Somnia. It rests a bid on
+      <em>both</em> outcomes of a binary market, holds no inventory, and takes no view on the underlying.</p>
+    <div class="cta">
+      <a class="btn pri" href="https://github.com/emmanuelist/cleave">Read the source</a>
+      <a class="btn" href="#proof">See the on-chain proof</a>
+      <a class="btn" href="#how">How it works</a>
+    </div>
+
+    <div class="live">
+      <div class="live-head">
+        <span>LIVE FROM SOMNIA SHANNON — READ IN YOUR BROWSER, NO SERVER</span>
+        <span class="dot" id="dot" data-on="false">● <span id="dotText">connecting</span></span>
+      </div>
+      <dl class="live-body">
+        <div class="cell"><dt>Up bid</dt><dd class="num" id="lUp">—</dd><small id="lMkt">selecting market…</small></div>
+        <div class="cell"><dt>Down bid</dt><dd class="num" id="lDown">—</dd><small>same book, mirrored — 1 minus the Up ask</small></div>
+        <div class="cell edge"><dt>Pair cost → redeems at 1.000</dt><dd class="num" id="lEdge">—</dd><small id="lPair">—</small></div>
+      </dl>
+      <div class="live-foot" id="lFoot">Querying the Somnia indexer directly from this page.</div>
+    </div>
+  </div>
+</header>
+
+<section class="band" id="how">
+  <div class="wrap">
+    <p class="eyebrow">The arithmetic</p>
+    <h2>An Up share and a Down share are worth exactly one, together, always.</h2>
+    <p>A binary market resolves one way or the other. One outcome pays 1, the other pays 0 — so holding
+      both is worth <strong>exactly 1 at settlement, whatever happens in the world</strong>. Buy the pair
+      for less than that and the difference is yours. No price move can take it, because you are not
+      exposed to price.</p>
+
+    <div class="math">Up  bid    <span class="u">0.489</span>
+Down bid   <span class="u">0.483</span>
+           ─────
+pair       <span class="u">0.972</span>   redeems at 1.000   →  2.8pp, no directional risk</div>
+
+    <div class="grid3">
+      <div>
+        <h3>Two bids, never a sell</h3>
+        <p>Selling an outcome you don't own reverts — there is no naked short. Buying both needs only
+          collateral, and the venue mints the pair when two opposite-side buyers cross. So the maker
+          never holds inventory.</p>
+      </div>
+      <div>
+        <h3>An edge floor, not a chase</h3>
+        <p>The order book includes your own resting order, so quoting one tick inside the best bid means
+          outbidding yourself — a ratchet that walks the edge to zero. Quotes are capped so a pair never
+          costs more than the floor allows.</p>
+      </div>
+      <div>
+        <h3>Leg risk, handled out loud</h3>
+        <p>If one bid fills and the other doesn't, you're briefly exposed. The loop completes the pair by
+          crossing — but only while the total stays under 1. Above that it holds the position and says so.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <p class="eyebrow">The instrument</p>
+    <h2>The gap is the number.</h2>
+    <p>Up and Down stack toward a fixed 1.000 and the space left over <em>is</em> the edge. That gap is
+      genuinely one to three points, so a true-scale column shows a sliver — and rather than inflate it,
+      a vernier expands the last five points alongside, where the same quantity is legible. Coarse for
+      honesty, fine for reading.</p>
+    <figure style="margin-top:30px">
+      <img src="../docs/shots/live-1440.png" alt="The Cleave instrument: unity line, vernier, live session trace, order books and activity log">
+      <figcaption>Live testnet. Every figure comes from the chain — there is no demo mode and no seeded fixture.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band" id="proof">
+  <div class="wrap">
+    <p class="eyebrow">Proof</p>
+    <h2>Transactions this code produced.</h2>
+    <p>Nothing on this page is a mock-up. These are real, on Somnia Shannon, and every one is clickable.</p>
+    <table>
+      <thead><tr><th>What</th><th>Transaction</th></tr></thead>
+      <tbody>
+        <tr><td>Complete set minted — 1 tUSDC → 1 Up + 1 Down</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x63fa4e26d06c9aab9a5d385110b9ddad82b9651b55a97bf14b89f3c3cd1a4842">0x63fa4e26</a></td></tr>
+        <tr><td>Merged back — exact, no leakage</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x210c57e47e732a348bb040b3e90cce6dd4bfa36ac9879b82394809682fec8ea1">0x210c57e4</a></td></tr>
+        <tr><td>First maker order resting</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x29f610342a8c9e70880a0d148da2d551d82845e353f8655bfd68f3f0d32b4e8c">0x29f61034</a></td></tr>
+        <tr><td>Up leg filled</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x6b1de65d4066ecc1cb0513c12658909d88f6c74f41eebba65498aedc6440e7a1">0x6b1de65d</a></td></tr>
+        <tr><td>Down leg filled</td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0x339a41025d67ac75b4345b81431ea9a57acb2972746a0c1539f59a418dbee3f8">0x339a4102</a></td></tr>
+        <tr><td>Winnings redeemed — <strong>+20.000 tUSDC</strong></td><td class="num"><a href="https://shannon-explorer.somnia.network/tx/0xb785b4f03a6f0fcc68be476ad4dd617dd667ef21d6d3fac1531d91cb1116afd3">0xb785b4f0</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <p class="eyebrow">Limits</p>
+    <h2>What this isn't.</h2>
+    <p>Stated plainly, because they're the first things worth asking.</p>
+    <ul class="plain">
+      <li><b>Testnet only.</b> Somnia Shannon, chain 50312, tUSDC. Unaudited, not on mainnet, not handling real money.</li>
+      <li><b>The venue has almost no organic flow.</b> Spreads sit in a narrow band across every market with near-identical depth — that's one fixed-width quoter, not a market. These numbers would not survive real adversarial flow, and we don't claim otherwise.</li>
+      <li><b>Some fills were bought deliberately.</b> To exercise settlement we crossed both books once, paying the spread on purpose. That trade is in the history above, at a loss.</li>
+      <li><b>No on-chain reactivity.</b> Somnia's on-chain reactivity needs a ~32 SOM subscription balance; this project runs at zero cost, so liveness uses the node's WebSocket feed. A deliberate trade, not an oversight.</li>
+      <li><b>One market at a time.</b> The loop quotes a single series. Concurrent series is the obvious extension and isn't built.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="wrap">
+  <span>Somnia Shannon · chain 50312 · tUSDC</span>
+  <span>Somnia × DreamDEX Event Contracts Hackathon · MIT</span>
+</footer>
+
+<script type="module">
+const INDEXER = "https://dev.smk.somnia.host/v1/graphql";
+const $ = (id) => document.getElementById(id);
+const f3 = (n) => (n == null ? "—" : n.toFixed(3));
+
+async function gql(query) {
+  const r = await fetch(INDEXER, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query }),
+  });
+  const j = await r.json();
+  if (j.errors) throw new Error(j.errors[0].message);
+  return j.data;
+}
+
+/** Best resting bid on each outcome of one live market, straight from the chain. */
+async function readLive() {
+  const m = await gql(`{ Market(limit:1, where:{clobStatus:{_eq:"Trading"}}, order_by:{expiry:asc})
+    { id asset expiry } }`);
+  const mkt = m.Market?.[0];
+  if (!mkt) throw new Error("no market currently trading");
+
+  // One book, two sides — and it is expressed entirely in YES terms. There is
+  // no BUY_NO row anywhere: a bid for Down IS an ask for Up, mirrored. So the
+  // Down bid is 1 minus the best (lowest) SELL_YES. This is the venue mechanic
+  // visible in the raw data, not an interpretation.
+  const side = async (name, dir) => {
+    const d = await gql(`{ Order(limit:1, where:{market_id:{_eq:"${mkt.id}"},
+      status:{_eq:"Open"}, side:{_eq:"${name}"}}, order_by:{price:${dir}})
+      { price } }`);
+    const p = d.Order?.[0]?.price;
+    return p == null ? null : Number(p) / 1e6;
+  };
+  const [bestBuyYes, bestSellYes] = await Promise.all([
+    side("BUY_YES", "desc"),   // highest bid for Up
+    side("SELL_YES", "asc"),   // lowest offer of Up == highest bid for Down
+  ]);
+  const up = bestBuyYes;
+  const down = bestSellYes == null ? null : 1 - bestSellYes;
+  return { mkt, up, down };
+}
+
+let ok = false;
+async function tick() {
+  try {
+    const { mkt, up, down } = await readLive();
+    $("lUp").textContent = f3(up);
+    $("lDown").textContent = f3(down);
+    $("lMkt").textContent = mkt.asset ? `${mkt.asset} · expires ${new Date(Number(mkt.expiry) * 1000).toUTCString().slice(17, 22)} UTC` : "live market";
+    if (up != null && down != null) {
+      const pair = up + down, edge = 1 - pair;
+      $("lEdge").textContent = `${(edge * 100).toFixed(1)}pp`;
+      $("lPair").textContent = `pair ${f3(pair)} · redeems 1.000`;
+      $("lFoot").textContent = edge > 0
+        ? `Both outcomes for ${f3(pair)}. Settlement pays 1.000 whichever way it resolves — that difference is the edge, and it carries no directional risk.`
+        : `Pair costs ${f3(pair)} against a redemption of 1.000. No edge right now — the strategy would stand aside.`;
+    } else {
+      $("lEdge").textContent = "—";
+      $("lPair").textContent = "one side has no resting bid";
+      $("lFoot").textContent = "The book is one-sided right now. This is what the venue actually looks like between quotes — not a placeholder.";
+    }
+    ok = true;
+  } catch (e) {
+    ok = false;
+    $("lFoot").textContent = `Could not reach the Somnia indexer: ${e.message}. The figures above are blank rather than invented.`;
+  }
+  $("dot").dataset.on = String(ok);
+  $("dotText").textContent = ok ? "live" : "unavailable";
+}
+tick(); setInterval(tick, 12000);
+
+/* Hero field — the same breathing volume as the instrument, lighter. */
+const cv = $("field");
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const g = cv.getContext("2d");
+  let t = 0, raf;
+  const draw = () => {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    for (let i = 0; i < 3; i++) {
+      const cx = w * (0.24 + Math.sin(t * 0.00021 + i * 2.1) * 0.16);
+      const cy = h * (0.46 + Math.cos(t * 0.00017 + i * 1.7) * 0.24);
+      const r = Math.max(w, h) * (0.34 + i * 0.13);
+      const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grd.addColorStop(0, `rgba(79,209,197,${0.050 - i * 0.013})`);
+      grd.addColorStop(1, "rgba(79,209,197,0)");
+      g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    }
+    t += 16; raf = requestAnimationFrame(draw);
+  };
+  draw();
+  document.addEventListener("visibilitychange", () => document.hidden ? cancelAnimationFrame(raf) : draw());
+}
+</script>
+</body>
+</html>

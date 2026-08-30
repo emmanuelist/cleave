@@ -47,7 +47,7 @@ export function mountTrace(canvas, opts = {}) {
       ctx.setLineDash([]);
       if (label) {
         // Backed, because the trace runs the full width and will sit under it.
-        ctx.font = '10px "IBM Plex Mono", monospace';
+        ctx.font = '10px "Azeret Mono", monospace';
         const w = ctx.measureText(label).width;
         ctx.fillStyle = "rgba(8,9,11,.78)";
         ctx.fillRect(2, y(v, H) + 2, w + 6, 13);

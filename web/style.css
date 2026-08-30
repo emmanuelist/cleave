@@ -29,8 +29,12 @@
   --naked:    #e0b341;
   --rolled:   #3a414d;
 
-  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Azeret Mono carries the data: squarish terminals, distinctive numerals,
+     and it reads as a measuring instrument rather than a code editor. Instrument
+     Sans handles labels. Neither is the default developer stack, which is the
+     point — typography is where a product's character lives or dies. */
+  --mono: "Azeret Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -68,7 +72,7 @@ body {
   width: 9px; height: 9px; align-self: center; flex: none;
   background: var(--under); clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
-.name { font-family: var(--mono); font-weight: 600; letter-spacing: 0.18em; font-size: 12px; }
+.name { font-family: var(--mono); font-weight: 600; letter-spacing: 0.22em; font-size: 11px; }
 .claim {
   color: var(--ink-dim); font-size: 12px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
@@ -180,7 +184,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 .v-read { align-self: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; width: 100%; }
 .edge-num {
   font-family: var(--mono); font-size: clamp(34px, 4.4vw, 58px); font-weight: 500;
-  color: var(--under); letter-spacing: -0.035em; line-height: 1;
+  color: var(--under); letter-spacing: -0.045em; line-height: 1;
 }
 .edge-unit { font-family: var(--mono); font-size: 10px; letter-spacing: .13em; color: var(--under); opacity: .6; }
 
@@ -218,7 +222,7 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 .levels { list-style: none; margin: 6px 0 0; padding: 0; }
 .levels li {
   position: relative; display: flex; justify-content: space-between;
-  font-family: var(--mono); font-size: 11px; color: var(--ink-dim);
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: -0.02em; color: var(--ink-dim);
   padding: 3px 4px; isolation: isolate;
 }
 .levels li::before {
@@ -267,8 +271,8 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 /* ── Events ─────────────────────────────────────────────────────────── */
 .ev-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px;
            align-content: start; flex: 1; min-height: 0; overflow-y: auto; }
-.ev-list li { display: grid; grid-template-columns: 60px 46px 1fr; gap: 10px;
-              font-family: var(--mono); font-size: 11px; color: var(--ink-dim); }
+.ev-list li { display: grid; grid-template-columns: 62px 44px 1fr; gap: 10px;
+              font-family: var(--mono); font-size: 10.5px; letter-spacing: -0.015em; color: var(--ink-dim); }
 .ev-list .t { color: var(--rolled); }
 .ev-list .k { letter-spacing: .08em; font-size: 9px; padding-top: 2px; }
 .ev-list li[data-k="leg"]  .k { color: var(--naked); }

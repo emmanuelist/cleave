@@ -26,6 +26,24 @@ pair       0.972      redeems at 1.000     ->  2.8pp, no directional risk
 
 That is the entire product. Everything below is evidence that it is real.
 
+## The site
+
+[`site/index.html`](site/index.html) is a single static file that **reads Somnia
+live from the browser** — no server, no key, no build step. It queries the
+indexer directly (CORS is open) and shows the pair cost currently available on
+the venue, so the claim on the page is checkable against the chain while you
+read it.
+
+Deploy it anywhere static. For GitHub Pages: Settings → Pages → deploy from
+branch, `/site`.
+
+![Cleave landing](docs/shots/landing.png)
+
+Building it surfaced the mechanic in the raw data: **there is no `BUY_NO` row in
+the order book at all.** The venue expresses the whole book in YES terms — a bid
+for Down *is* an ask for Up, mirrored — so `down = 1 - min(SELL_YES)`. The "one
+book, two sides" claim is visible in the schema, not just the docs.
+
 ## Run it
 
 ```bash
