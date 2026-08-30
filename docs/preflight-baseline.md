@@ -174,3 +174,58 @@ has, and the failure surfaces as `Missing or invalid parameters` — with
 **Feedback report item.** Along with `getMarketOnchain` requiring `addresses`
 and the faucet's own 13x reserve-to-burn ratio, this is the third instance of
 the same pattern: a real precondition reported as a parameter error.
+
+---
+
+# First live order — 2026-08-19
+
+```
+market   ETH-0-30AUG26-1200/tUSDC#YES
+post     buy 5 @ 0.527, post-only
+id       110680464442257325224
+status   open
+tx       0x29f610342a8c9e70880a0d148da2d551d82845e353f8655bfd68f3f0d32b4e8c
+```
+
+The write path is verified end to end: ERC-20 approve, sign, `placeBinaryOrder`,
+resting order. Gas was the only thing blocking it — with 50 STT the documented
+unified API works untouched, so the raw-tier gas ceiling is now an optimisation
+rather than a prerequisite.
+
+## The finding: the book moves faster than we can price it
+
+```
+at scan   bid 0.516  ask 0.546
+at post   bid 0.526  ask 0.556     <- drifted 2.0pp during the scan
+after     bid 0.537  ask 0.567     <- drifted another 1.1pp
+```
+
+Two independent ~1pp moves inside about a minute, and the **spread stayed pinned
+at 3.00pp through all of it.** The incumbent is not quoting a static price — it
+is tracking the underlying ETH mark and re-posting a fixed-width spread around a
+moving mid.
+
+This corrects the earlier read. The incumbent is non-adaptive *in width*, not in
+level. It will not tighten against us, but it does reprice continuously.
+
+## Consequences for the maker loop
+
+1. **A posted quote goes stale in seconds.** We landed one tick inside the bid
+   and were 1pp behind the touch by the next block. Post-and-hold is not a
+   strategy here; the loop must reprice.
+2. **Scan-then-post is the wrong architecture.** The market scan does an
+   on-chain status check per market and costs tens of seconds — longer than the
+   book's coherence time. Selection and pricing cannot share a read.
+3. **Use the live tail, not polling.** `watchOrderBook` is documented as live
+   with zero round-trip. The loop should hold a warm subscription per market and
+   reprice on push, rather than calling `fetchOrderBook` in a loop.
+4. **`PostOnlyWouldCross` is the normal case, not an error.** A maker that
+   cannot lose that race never posts. Retry with a re-read is now in `quote.ts`
+   and belongs in the loop too.
+
+## The thesis is unchanged, the implementation is not
+
+Zero inventory still holds — we posted a two-sided-capable quote with no
+position behind it. But "stand in a wide spread" becomes "track the mid and hold
+a tighter spread around it than the incumbent", which is a live loop, not a
+cron.
