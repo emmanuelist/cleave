@@ -339,3 +339,66 @@ loop is solid.
 landed within seconds of each other and the indexer never surfaced the
 intermediate state. Balance deltas on the collateral token are the reliable
 read for anything faster than indexing.
+
+---
+
+# Reconciliation, leg risk, and the self-referential book — 2026-08-30
+
+## Orphan reconciliation
+
+Every previous run left its bids resting; three had accumulated. The loop now
+reads open orders on both books at startup, **adopts** one still within `DRIFT`
+ticks of target (keeping its queue position) and cancels the rest.
+
+```
+11:55:51  reconcile up   2 found, all cancelled
+11:55:52  reconcile down 0 found, all cancelled
+...
+open orders   2   0.548 0.439        <- exactly one per side
+```
+
+## Leg risk
+
+The only real exposure in the two-bid model. If one leg fills, the loop crosses
+the other book to complete the pair — **but only while the pair still totals
+under 1.** Above that, completing locks in a loss, so it holds the naked leg and
+says so rather than papering over it. Wired and exercised (0 events: nothing has
+filled yet).
+
+## The bug that mattered: we were bidding against ourselves
+
+Edge decayed monotonically across the first run:
+
+```
+11:55:54  pair 0.973  edge 2.7pp
+11:56:10  pair 0.988  edge 1.2pp
+11:57:46  pair 0.990  edge 1.0pp
+```
+
+Two causes, one shape:
+
+1. **`watchOrderBook` includes our own resting order.** Once we are the best
+   bid, `bestBid + tick` is an instruction to outbid ourselves. It ratchets one
+   tick per reprice until the edge is gone.
+2. Chasing a moving book does the same thing more slowly.
+
+It only stopped because `DRIFT = 3` happened to absorb a 1-tick ratchet. That is
+luck, not design — at `DRIFT = 1` it would have walked the pair straight to 1.000.
+
+## The fix: an edge floor, not a drift threshold
+
+Quotes are now scaled so the pair never costs more than `1 - MIN_EDGE`
+(1.5pp). The loop still improves on the touch and still tracks the market; it
+simply will not spend the edge to do it.
+
+```
+12:00:26  Up 0.562 Down 0.435  pair 0.985  edge 1.5pp*  reprice both (capped)
+12:00:42  Up 0.563 Down 0.427  pair 0.985  edge 1.5pp*  hold
+12:01:00  Up 0.558 Down 0.427  pair 0.985  edge 1.5pp*  hold
+```
+
+Pinned at the floor while the book moved under it. `*` marks a capped quote.
+
+**The general lesson, and the one worth saying out loud in the demo:** the edge
+is the product. Queue position is not worth paying for with it. A maker that
+chases is just a taker with extra steps.

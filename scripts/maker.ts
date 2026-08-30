@@ -2,20 +2,17 @@
  * Cleave — the maker loop.
  *
  * Two BIDS, never a sell: buy Up at p, buy Down at q, with p + q < 1.
+ * A filled pair is a complete set, and a complete set redeems for exactly 1
+ * (verified on-chain: see docs/preflight-baseline.md). So the edge per pair is
+ * 1 - (p + q), and it carries no directional risk.
  *
- * Selling Up requires owning Up (the venue rejects it with InsufficientBalance).
- * But BUYING both outcomes needs only collateral, and a filled pair is a
- * complete set that redeems for exactly 1. So the maker never holds inventory
- * and never carries directional risk - it offers to buy the whole market for
- * less than the whole market is worth, and the pool mints the pair on cross.
+ * The one real risk is LEG RISK: one bid fills and the other does not, leaving a
+ * naked outcome. The loop handles it explicitly rather than hoping.
  *
- * Edge per filled pair = 1 - (p + q), which is the spread.
- *
- *   npm run maker                 # dry run, prints what it would quote
- *   npm run maker -- --live       # quote for real
+ *   npm run maker                        # dry run
  *   npm run maker -- --live --minutes 10
  */
-import { SomniaMarkets, isBinaryMarket, type UnifiedOrder } from "@somnia-chain/markets-sdk";
+import { SomniaMarkets, isBinaryMarket, type UnifiedOrder, type UnifiedPosition } from "@somnia-chain/markets-sdk";
 import { loadConfig } from "../src/config.js";
 
 const cfg = loadConfig();
@@ -23,148 +20,192 @@ const live = process.argv.includes("--live");
 const MINUTES = Number(process.argv[process.argv.indexOf("--minutes") + 1]) || 5;
 const SIZE = Number(process.env.QUOTE_SIZE ?? 5);
 const TICK = 0.001;
-const EDGE = 1;        // how many ticks inside the touch we sit
-const DRIFT = 3;       // reprice once our quote is this many ticks off target
+const EDGE_TICKS = 1;    // how far inside the touch we sit
+const DRIFT = 3;         // reprice once our resting order is this many ticks off
+const MIN_EDGE = 0.015;  // never let a quoted pair cost more than 1 - this (1.5pp)
 const INTERVAL_MS = 6_000;
 
 const t = () => new Date().toTimeString().slice(0, 8);
 const line = (s = "") => console.log(s);
 const px = (n?: number) => (n === undefined ? "  —  " : n.toFixed(3));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
   if (!cfg.privateKey) throw new Error("No PRIVATE_KEY in .env.");
-
   const exchange = new SomniaMarkets({
-    indexerUrl: cfg.indexerUrl,
-    chain: cfg.chain,
-    wsRpcUrl: cfg.wsRpcUrl,
-    addresses: cfg.addresses,
-    privateKey: cfg.privateKey as `0x${string}`,
+    indexerUrl: cfg.indexerUrl, chain: cfg.chain, wsRpcUrl: cfg.wsRpcUrl,
+    addresses: cfg.addresses, privateKey: cfg.privateKey as `0x${string}`,
   });
 
-  // ── Select once, at startup ───────────────────────────────────────────────
-  // The on-chain status check costs seconds per market, far longer than the book
-  // stays coherent, so selection must never share a read with pricing.
+  // ── Select once. The on-chain status check costs seconds per market, far
+  //    longer than a book stays coherent, so selection never shares a read
+  //    with pricing.
   line(`${t()}  selecting market...`);
   const all = Object.values(await exchange.loadMarkets(true));
-  const cands = all.filter((m) => isBinaryMarket(m.info) && m.active);
-
-  let chosen: { sym: string; downSym: string; expiry: number } | undefined;
-  for (const m of cands) {
-    const sym = m.outcomes?.[0]?.symbol;
-    const dsym = m.outcomes?.[1]?.symbol;
-    if (!sym || !dsym) continue;
-    const info = m.info as { marketId: string; expiry?: string };
+  let pick: { up: string; down: string; expiry: number } | undefined;
+  for (const m of all) {
+    if (!isBinaryMarket(m.info) || !m.active) continue;
+    const up = m.outcomes?.[0]?.symbol, down = m.outcomes?.[1]?.symbol;
+    if (!up || !down) continue;
+    const i = m.info as { marketId: string; expiry?: string };
     try {
-      if ((await exchange.client.getMarketOnchain(info.marketId as `0x${string}`)).status !== 1) continue;
-      const b = await exchange.fetchOrderBook(sym, 3);
-      if (b.bids[0]?.[0] === undefined || b.asks[0]?.[0] === undefined) continue;
-      const expiry = Number(info.expiry ?? 0);
-      // Prefer the longest-dated market: a quote is worthless if the window closes under us.
-      if (!chosen || expiry > chosen.expiry) chosen = { sym, downSym: dsym, expiry };
-    } catch { /* skip unreadable */ }
+      if ((await exchange.client.getMarketOnchain(i.marketId as `0x${string}`)).status !== 1) continue;
+      const expiry = Number(i.expiry ?? 0);
+      if (!pick || expiry > pick.expiry) pick = { up, down, expiry };
+    } catch { /* unreadable */ }
   }
-  if (!chosen) { line("No tradable market."); return; }
+  if (!pick) { line("No tradable market."); return; }
+  const { up: UP, down: DOWN } = pick;
+  const mins = pick.expiry ? Math.round((pick.expiry * 1000 - Date.now()) / 60000) : NaN;
+  line(`${t()}  ${UP}`);
+  line(`${t()}  expires in ${isNaN(mins) ? "?" : mins} min · size ${SIZE} · ${live ? "\x1b[32mLIVE\x1b[0m" : "dry run"}`);
 
-  const sym = chosen.sym;
-  const downSym = chosen.downSym;
-  const expiresIn = chosen.expiry ? Math.round((chosen.expiry * 1000 - Date.now()) / 60000) : NaN;
-  line(`${t()}  ${sym}`);
-  line(`${t()}  expires in ${isNaN(expiresIn) ? "?" : expiresIn} min · size ${SIZE} · ${live ? "\x1b[32mLIVE\x1b[0m" : "dry run"}`);
-  line();
+  await Promise.all([exchange.watchOrderBook(UP, 5), exchange.watchOrderBook(DOWN, 5)]);
 
-  // Warm the live subscription. Subsequent reads come from the local book.
-  await Promise.all([exchange.watchOrderBook(sym, 5), exchange.watchOrderBook(downSym, 5)]);
-
-  const deadline = Date.now() + MINUTES * 60_000;
+  // ── Reconcile ─────────────────────────────────────────────────────────────
+  // Every previous run left its orders resting. Adopt the ones still close to
+  // where we want to be (keeping queue position) and cancel the rest, so a
+  // restart converges instead of stacking another layer of stale bids.
   let upOrder: UnifiedOrder | undefined;
   let downOrder: UnifiedOrder | undefined;
-  let rejected: string | undefined;
-  let reprices = 0;
 
-  /** Post a BUY on one outcome's book, backing off if it would cross. */
-  const post = async (onSym: string, price: number): Promise<UnifiedOrder | undefined> => {
+  if (live) {
+    const b0 = await exchange.watchOrderBook(UP, 5);
+    const d0 = await exchange.watchOrderBook(DOWN, 5);
+    const wantUp0 = Number(((b0.bids[0]?.[0] ?? 0) + EDGE_TICKS * TICK).toFixed(3));
+    const wantDown0 = Number(((d0.bids[0]?.[0] ?? 0) + EDGE_TICKS * TICK).toFixed(3));
+    for (const [sym, want, slot] of [[UP, wantUp0, "up"], [DOWN, wantDown0, "down"]] as const) {
+      const existing = await exchange.fetchOpenOrders(sym).catch(() => [] as UnifiedOrder[]);
+      let kept: UnifiedOrder | undefined;
+      for (const o of existing) {
+        const near = o.price !== undefined && Math.abs(o.price - want) / TICK <= DRIFT;
+        if (near && !kept) { kept = o; continue; }
+        if (o.id) { try { await exchange.cancelOrder(o.id, sym); } catch { /* already gone */ } }
+      }
+      const label = `${existing.length} found`;
+      line(`${t()}  reconcile ${slot.padEnd(4)} ${label}, ${kept ? `adopted ${px(kept.price)}` : "all cancelled"}`);
+      if (slot === "up") upOrder = kept; else downOrder = kept;
+    }
+  }
+  line();
+
+  const deadline = Date.now() + MINUTES * 60_000;
+  let reprices = 0, legEvents = 0;
+  let rejected: string | undefined;
+
+  const post = async (sym: string, price: number): Promise<UnifiedOrder | undefined> => {
     for (let a = 1; a <= 3; a++) {
-      try {
-        return await exchange.createOrder(onSym, "limit", "buy", SIZE, price, { timeInForce: "PO" });
-      } catch (err) {
+      try { return await exchange.createOrder(sym, "limit", "buy", SIZE, price, { timeInForce: "PO" }); }
+      catch (err) {
         const name = (err as { errorName?: string }).errorName;
         if (name === "PostOnlyWouldCross" && a < 3) {
-          const b = await exchange.watchOrderBook(onSym, 5);
+          const b = await exchange.watchOrderBook(sym, 5);
           const ask = b.asks[0]?.[0];
           if (ask === undefined) return undefined;
           price = Number((ask - TICK).toFixed(3));
           continue;
         }
-        rejected = `${onSym.endsWith("#YES") ? "Up" : "Down"}: ${name ?? (err as Error).message.slice(0, 70)}`;
+        rejected = `${sym.endsWith("#YES") ? "Up" : "Down"}: ${name ?? (err as Error).message.slice(0, 70)}`;
         return undefined;
       }
     }
     return undefined;
   };
 
+  /** Contracts held per outcome. Indexer-backed, so it lags a fast fill. */
+  const held = async () => {
+    const ps: UnifiedPosition[] = await exchange.fetchPositions([UP, DOWN]).catch(() => []);
+    const g = (s: string) => Number(ps.find((p) => p.symbol === s)?.contracts ?? 0);
+    return { up: g(UP), down: g(DOWN) };
+  };
+
   while (Date.now() < deadline) {
-    const [ub, db] = await Promise.all([
-      exchange.watchOrderBook(sym, 5),
-      exchange.watchOrderBook(downSym, 5),
-    ]);
+    const [ub, db] = await Promise.all([exchange.watchOrderBook(UP, 5), exchange.watchOrderBook(DOWN, 5)]);
     const upBid = ub.bids[0]?.[0], downBid = db.bids[0]?.[0];
     if (upBid === undefined || downBid === undefined) { await sleep(INTERVAL_MS); continue; }
 
-    const wantUp = Number((upBid + EDGE * TICK).toFixed(3));
-    const wantDown = Number((downBid + EDGE * TICK).toFixed(3));
-    const pairCost = wantUp + wantDown;
-    const edge = 1 - pairCost;
-    const off = (o: UnifiedOrder | undefined, want: number) =>
-      o?.price === undefined ? Infinity : Math.abs(o.price - want) / TICK;
+    // Improve on the touch, but never past the point where the pair stops being
+    // worth owning. Two reasons this cap is load-bearing:
+    //   1. watchOrderBook includes OUR OWN resting order, so once we are the
+    //      best bid, bestBid + tick is bidding against ourselves — a ratchet
+    //      that walks the edge to zero one tick at a time.
+    //   2. Chasing a moving book does the same thing more slowly.
+    // The edge is the product. We do not pay for queue position with it.
+    const rawUp = upBid + EDGE_TICKS * TICK;
+    const rawDown = downBid + EDGE_TICKS * TICK;
+    const budget = 1 - MIN_EDGE;
+    const scale = rawUp + rawDown > budget ? budget / (rawUp + rawDown) : 1;
+    const wantUp = Number((rawUp * scale).toFixed(3));
+    const wantDown = Number((rawDown * scale).toFixed(3));
+    const pair = wantUp + wantDown;
+    const edge = 1 - pair;
+    const capped = scale < 1;
+    const off = (o: UnifiedOrder | undefined, w: number) =>
+      o?.price === undefined ? Infinity : Math.abs(o.price - w) / TICK;
 
     let action = "hold";
-    // Only quote when the pair is worth buying: a complete set redeems for
-    // exactly 1, so paying 1 or more for one is a guaranteed loss.
-    if (live && edge > 0) {
+
+    // ── Leg risk ───────────────────────────────────────────────────────────
+    // A naked outcome is the only real exposure in this strategy. If one leg
+    // filled, complete the pair by CROSSING the other book — but only while
+    // the pair still totals under 1. Above that, completing locks in a loss;
+    // better to keep resting and accept we are carrying a position.
+    if (live) {
+      const pos = await held();
+      const naked = pos.up !== pos.down;
+      if (naked) {
+        legEvents++;
+        const short = pos.up > pos.down ? DOWN : UP;
+        const filledLeg = pos.up > pos.down ? upOrder?.price : downOrder?.price;
+        const book = short === UP ? ub : db;
+        const ask = book.asks[0]?.[0];
+        const budget = filledLeg === undefined ? undefined : 1 - filledLeg;
+        if (ask !== undefined && budget !== undefined && ask < budget) {
+          line(`${t()}  \x1b[36mleg risk: naked ${short === UP ? "Down" : "Up"}; completing at ${px(ask)} (budget ${px(budget)})\x1b[0m`);
+          try {
+            await exchange.createOrder(short, "limit", "buy", Math.abs(pos.up - pos.down), ask + TICK, { timeInForce: "IOC" });
+            action = "completed pair";
+          } catch (e) { line(`${t()}  could not complete: ${(e as { errorName?: string }).errorName ?? "?"}`); }
+        } else {
+          line(`${t()}  \x1b[33mleg risk: naked, but completing at ${px(ask)} exceeds budget ${px(budget)} — holding\x1b[0m`);
+        }
+      }
+    }
+
+    // ── Quote ──────────────────────────────────────────────────────────────
+    // Only quote when the pair is worth owning. A complete set pays exactly 1,
+    // so bidding 1 or more for one is a guaranteed loss.
+    if (live && edge > 0 && action === "hold") {
       if (off(upOrder, wantUp) > DRIFT) {
-        if (upOrder?.id) { try { await exchange.cancelOrder(upOrder.id, sym); } catch { /* gone */ } }
-        upOrder = await post(sym, wantUp);
-        action = "reprice Up"; reprices++;
+        if (upOrder?.id) { try { await exchange.cancelOrder(upOrder.id, UP); } catch { /* gone */ } }
+        upOrder = await post(UP, wantUp); action = "reprice Up"; reprices++;
       }
       if (!rejected && off(downOrder, wantDown) > DRIFT) {
-        if (downOrder?.id) { try { await exchange.cancelOrder(downOrder.id, downSym); } catch { /* gone */ } }
-        downOrder = await post(downSym, wantDown);
+        if (downOrder?.id) { try { await exchange.cancelOrder(downOrder.id, DOWN); } catch { /* gone */ } }
+        downOrder = await post(DOWN, wantDown);
         action = action === "hold" ? "reprice Down" : "reprice both";
       }
     } else if (edge <= 0) action = "stand aside (no edge)";
+    if (capped && action.startsWith("reprice")) action += " (capped)";
 
-    line(
-      `${t()}  Up ${px(upBid)} Down ${px(downBid)}  pair ${pairCost.toFixed(3)}` +
-      `  edge ${(edge * 100).toFixed(1)}pp   ours ${px(upOrder?.price)}/${px(downOrder?.price)}   ${action}`
-    );
+    line(`${t()}  Up ${px(upBid)} Down ${px(downBid)}  pair ${pair.toFixed(3)}  edge ${(edge * 100).toFixed(1)}pp${capped ? "*" : " "}` +
+         `   ours ${px(upOrder?.price)}/${px(downOrder?.price)}   ${action}`);
     if (rejected) { line(`        \x1b[33mrejected: ${rejected}\x1b[0m`); break; }
     await sleep(INTERVAL_MS);
   }
 
-  // ── Report ────────────────────────────────────────────────────────────────
   line();
-  line("─".repeat(64));
+  line("─".repeat(66));
   const open = [
-    ...await exchange.fetchOpenOrders(sym).catch(() => [] as UnifiedOrder[]),
-    ...await exchange.fetchOpenOrders(downSym).catch(() => [] as UnifiedOrder[]),
+    ...await exchange.fetchOpenOrders(UP).catch(() => [] as UnifiedOrder[]),
+    ...await exchange.fetchOpenOrders(DOWN).catch(() => [] as UnifiedOrder[]),
   ];
-  const pos = await exchange.fetchPositions([sym, downSym]).catch(() => []);
+  const pos = await held();
   line(`reprices      ${reprices}`);
-  line(`open orders   ${open.length}`);
-  for (const o of open) line(`  ${o.side?.padEnd(4)} ${px(o.price)} x ${o.amount ?? "?"}  ${o.status ?? ""}`);
-  line(`positions     ${pos.length}`);
-  for (const p of pos) line(`  ${JSON.stringify(p).slice(0, 110)}`);
-  line();
-  line(rejected
-    ? `\x1b[33mNOT CONFIRMED — ${rejected}\x1b[0m`
-    : upOrder && downOrder
-      ? "\x1b[32mTHESIS HOLDS — bids resting on BOTH outcomes, zero inventory, zero directional risk.\x1b[0m"
-      : "Both legs never rested (dry run, or one book stayed empty).");
-
+  line(`leg events    ${legEvents}`);
+  line(`open orders   ${open.length}   ${open.map((o) => px(o.price)).join(" ")}`);
+  line(`position      Up ${pos.up}  Down ${pos.down}${pos.up === pos.down ? "  (flat / paired)" : "  \x1b[33m(NAKED LEG)\x1b[0m"}`);
   await exchange.close();
 }
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 main().then(() => process.exit(0)).catch((e) => { console.error("\n\x1b[31mmaker failed\x1b[0m\n", e); process.exit(1); });
