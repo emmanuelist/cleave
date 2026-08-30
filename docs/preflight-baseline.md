@@ -442,3 +442,54 @@ still live). Settlement is at ~11:53 UTC; the redeem runs after that.
 
 Note `ClaimableInput` requires `settlementFeeBps`, which is not obvious from the
 name — it is on the market row as a nullable string.
+
+---
+
+# Rollover — 2026-08-30
+
+## Markets expire every two minutes
+
+```
+   0 min  ETH-245938-30AUG26-1123      2 min  ETH-0-30AUG26-1125
+   0 min  BTC-7817435-30AUG26-1123     2 min  BTC-0-30AUG26-1125
+```
+
+Rollover is not an edge case on this venue, it is **the dominant behaviour**. A
+loop that selects once and quotes until it stops is quoting into a dead book
+within two minutes. Anything built here has to follow the series or it does
+nothing.
+
+Markets carry **no successor pointer** — only `intervalSec`. Continuity is
+inferred: on expiry we re-select, scoring same-asset and same-cadence markets
+above others and excluding any expiring no later than the one being replaced.
+
+## The book locks before the stated expiry
+
+First attempt rolled on `now >= expiry` and died:
+
+```
+12:26:00  reprice Up (capped)
+          rejected: Up: TradingNotActive
+```
+
+`TradingNotActive` is not a failure — it is the rollover signal arriving ahead
+of the clock. The loop now rolls `ROLL_LEAD_MS` (20s) early **and** treats
+`TradingNotActive` as a roll trigger rather than a fatal error. Clean after:
+
+```
+12:29:49  window closing — rolling
+12:30:00  ETH-0-30AUG26-1200-DCD3/tUSDC#YES
+12:30:03  Up 0.742 Down 0.231  pair 0.975  edge 2.5pp   reprice both
+```
+
+## These are ultra-short binaries, and they converge violently
+
+Across three consecutive two-minute markets the Up price went
+`0.295 -> 0.126 -> 0.514 -> 0.870 -> 0.956 -> 0.980`. As expiry nears, the
+probability collapses to near-certainty — which is exactly what a
+minutes-to-expiry binary should do.
+
+**The spread stays ~2pp throughout.** At `Up 0.980 / Down 0.011` the pair still
+costs 0.99 and still redeems for 1. The arithmetic is indifferent to where in
+`(0,1)` the market sits, which is a genuine strength of the two-bid model over
+anything that reasons about direction: we never have to be right about ETH.
