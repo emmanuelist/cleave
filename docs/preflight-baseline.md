@@ -296,3 +296,46 @@ The claim tightens from a market-making story to an arithmetic one:
 Falsifiable, checkable on screen, and it is the mechanic rather than a gloss on
 it. `1 - (p + q)` is the number the interface should put in front of a judge,
 because anyone can verify it against the book in about four seconds.
+
+---
+
+# Complete-set round trip — verified 2026-08-30
+
+```
+market   ETH-0-31AUG26/tUSDC
+pool     0xdb17da3b7135737c8cae0b1f389bee70bf01e47c
+
+mintSet  9990.225 -> 9989.225   1 tUSDC spent
+         0x63fa4e26d06c9aab9a5d385110b9ddad82b9651b55a97bf14b89f3c3cd1a4842
+burnSet  9989.225 -> 9990.225   1 tUSDC returned
+         0x210c57e47e732a348bb040b3e90cce6dd4bfa36ac9879b82394809682fec8ea1
+
+net      0.000 tUSDC
+```
+
+**`1 tUSDC <-> 1 Up + 1 Down`, exact, no fee on either leg.** This is the
+identity the whole product rests on, and it is now proven on-chain rather than
+quoted from documentation.
+
+## Two things it settles
+
+**The redemption value is real.** A complete set is worth exactly 1, so
+`1 - (p + q)` is genuine edge and not an accounting artifact.
+
+**The ask side has a legitimate route.** Selling Up failed with
+`InsufficientBalance` because we owned no Up. `mintSet` is how a maker acquires
+sell-side inventory while staying delta-neutral — a complete set carries no
+directional exposure, so minting one and quoting an ask against it adds no
+market risk. The dreamDEX docs say exactly this ("mint and merge complete sets
+for sell-side inventory"); we read past it.
+
+Not adopted yet. The two-bid model is cleaner and needs no capital committed up
+front. Minting for ask-side inventory is the obvious extension once the base
+loop is solid.
+
+## Indexer note
+
+`fetchPositions` reported `none` even immediately after the mint. Mint and burn
+landed within seconds of each other and the indexer never surfaced the
+intermediate state. Balance deltas on the collateral token are the reliable
+read for anything faster than indexing.
