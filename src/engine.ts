@@ -28,6 +28,9 @@ export interface EngineState {
   stats: { reprices: number; rolls: number; legEvents: number; ticks: number };
   lineage: { symbol: string; expiry: number; state: "active" | "rolled" }[];
   events: EngineEvent[];
+  /** Set when the engine stopped on an error, so the UI can say what happened
+   *  rather than showing a hopeful 'selecting a market'. */
+  fault?: string;
   updatedAt: number;
 }
 

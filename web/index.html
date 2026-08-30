@@ -15,7 +15,7 @@
 <canvas id="gl" class="gl" aria-hidden="true"></canvas>
 <header class="bar">
   <div class="brand">
-    <svg class="mark" viewBox="0 0 64 64" width="13" height="13" aria-hidden="true"><rect x="12" y="13" width="40" height="6" rx="3" fill="#4fd1c5"/><rect x="12" y="29" width="40" height="10" rx="2" fill="#2b3a4a"/><rect x="12" y="42" width="40" height="10" rx="2" fill="none" stroke="#4fd1c5" stroke-opacity=".55" stroke-width="3"/></svg>
+    <svg class="mark" viewBox="0 0 64 64" width="16" height="16" aria-hidden="true"><rect x="10" y="11" width="44" height="7" rx="3.5" fill="#4fd1c5"/><rect x="10" y="34" width="44" height="9" rx="2" fill="#3d5162"/><rect x="10" y="46" width="44" height="9" rx="2" fill="none" stroke="#4fd1c5" stroke-opacity=".6" stroke-width="3"/></svg>
     <span class="name">CLEAVE</span>
     <span class="claim">Buy every outcome for less than one. Settlement pays exactly one.</span>
   </div>
@@ -26,12 +26,24 @@
   </div>
 </header>
 
+<div class="stale-bar" id="staleBar" hidden>
+  <span class="stale-dot"></span>
+  <span id="staleText">Disconnected from the engine. The figures below are the last received and are no longer live.</span>
+</div>
+
 <main>
   <!-- ── The Unity Line ─────────────────────────────────────────────── -->
   <section class="unity" aria-labelledby="unity-h">
     <h2 id="unity-h" class="eyebrow">The unity line</h2>
 
-    <div class="unity-body">
+    <div class="empty-instrument" id="emptyInstrument" hidden>
+      <p class="empty-h">Nothing to quote</p>
+      <p class="empty-b" id="emptyWhy">Selecting a market to quote.</p>
+      <p class="empty-n">Markets here expire every couple of minutes and the venue rolls a successor.
+        The loop holds until one opens rather than quoting into a dead book.</p>
+    </div>
+
+    <div class="unity-body" id="unityBody">
       <!-- Coarse: the true unit interval, to scale. The edge is a sliver, and
            showing it as one is the honest thing to do. -->
       <div class="scale" aria-hidden="true">

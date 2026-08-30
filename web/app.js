@@ -51,6 +51,14 @@ requestAnimationFrame(animate);
 
 const V_FLOOR = 0.95;   // vernier window: 0.950 -> 1.000, twentyfold expansion
 
+function setEmpty(on, why) {
+  document.getElementById("emptyInstrument").hidden = !on;
+  document.getElementById("unityBody").hidden = on;
+  document.getElementById("verdict").hidden = on;
+  document.querySelector(".trace-wrap").hidden = on;
+  if (on && why) document.getElementById("emptyWhy").textContent = why;
+}
+
 function renderUnity(s) {
   const up = s.quote.up ?? s.book.upBid;
   const down = s.quote.down ?? s.book.downBid;
@@ -84,8 +92,26 @@ function renderUnity(s) {
     trace.push(pair);
   }
 
+  // No market is a real state on this venue, not a loading spinner: markets
+  // expire every couple of minutes and there are gaps between them.
+  if (!s.market) {
+    setEmpty(true, s.fault
+      ? `The engine stopped: ${s.fault}`
+      : s.events.some((e) => e.text.includes("no tradable"))
+        ? "No market is currently trading on this venue."
+        : "Selecting a market to quote.");
+    return;
+  }
+  if (!known) {
+    setEmpty(true, s.fault
+      ? `The engine stopped: ${s.fault}`
+      : "The book on this market is empty on at least one side, so there is no pair to price.");
+    return;
+  }
+  setEmpty(false);
+
   const v = $("verdict");
-  if (!known) { v.dataset.state = "idle"; v.textContent = "Acquiring market…"; }
+  if (false) { v.dataset.state = "idle"; }
   else if (edge > 0) {
     v.dataset.state = "under";
     v.textContent = `Both outcomes for ${f3(pair)}. Settlement pays 1.000 whichever way it resolves. That is ${pp(edge)}pp, with no directional risk.`;
@@ -101,7 +127,7 @@ function renderBook(elId, topId, levels, mine) {
   ol.innerHTML = "";
   if (!levels || !levels.length) {
     const li = document.createElement("li");
-    li.className = "empty"; li.textContent = "no resting bids";
+    li.className = "empty"; li.textContent = "no resting bids on this side";
     ol.append(li); return;
   }
   const max = Math.max(...levels.map((l) => l[1] || 0), 1);
@@ -196,7 +222,30 @@ document.body.classList.add("boot");
 addEventListener("load", () => setTimeout(() => document.body.classList.remove("boot"), 1400));
 
 const src = new EventSource("/api/stream");
-src.onmessage = (e) => { $("conn").dataset.on = "true"; $("conn").textContent = "live"; render(JSON.parse(e.data)); };
-src.onerror = () => { $("conn").dataset.on = "false"; $("conn").textContent = "reconnecting…"; };
+let lastFrameAt = 0;
+src.onmessage = (e) => {
+  lastFrameAt = Date.now();
+  document.body.classList.remove("stale");
+  $("staleBar").hidden = true;
+  const frame = JSON.parse(e.data);
+  // The stream being up and the engine being alive are two different things.
+  const healthy = !frame.fault;
+  $("conn").dataset.on = String(healthy);
+  $("conn").textContent = healthy ? "live" : "engine stopped";
+  render(frame);
+};
+function goStale(why) {
+  document.body.classList.add("stale");
+  $("staleBar").hidden = false;
+  $("staleText").textContent = lastFrameAt
+    ? `${why} The figures below were last updated at ${new Date(lastFrameAt).toTimeString().slice(0, 8)} and are no longer live.`
+    : `${why} No data has been received yet.`;
+  $("conn").dataset.on = "false"; $("conn").textContent = "disconnected";
+}
+src.onerror = () => goStale("Disconnected from the engine.");
+// A stream that stops without erroring is the quieter failure. Catch it too.
+setInterval(() => {
+  if (lastFrameAt && Date.now() - lastFrameAt > 30_000) goStale("No update from the engine in 30s.");
+}, 5_000);
 setInterval(tickCountdown, 1000);
 addEventListener("resize", () => latest && renderUnity(latest));

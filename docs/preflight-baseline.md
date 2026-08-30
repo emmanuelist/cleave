@@ -605,3 +605,45 @@ acceptable, so the column keeps true scale and a **vernier** expands 0.950–1.0
 beside it — coarse for honesty, fine for legibility. That is how a measuring
 instrument handles a fine reading, and it is only available to a product with a
 fixed redemption value to measure against.
+
+---
+
+# Empty and error states, reached for real
+
+The run of show tells you to say "this is what it does when there is nothing to
+quote", so that state had to be verified rather than assumed. Both were reached
+by real means: pointing the engine at a dead indexer, and killing the server
+mid-session. Nothing was stubbed.
+
+## The correctness bug this found
+
+**A dropped stream left the numbers frozen and still looking live.** That is the
+worst failure a trading interface can have: every figure was stale and nothing
+on screen said so. Now a dropped or silent stream raises a banner naming the
+time of the last update, and every live figure visibly degrades, the edge losing
+its bloom and dropping to flat grey.
+
+Two failure modes are covered, because they are different: the stream erroring,
+and the stream going quiet without erroring. The second is caught by a watchdog
+at 30s.
+
+## Defects the render surfaced
+
+1. **`hidden` did not hide.** `.unity-body { display: grid }` overrides the
+   attribute, so the instrument kept drawing underneath the empty state.
+   `[hidden] { display: none !important }` is now global.
+2. **The empty state lied.** It read "Selecting a market to quote" while the
+   engine had actually died on `indexer RegistryMarkets failed: HTTP 404`. The
+   engine now carries a `fault` through to state and the UI names it.
+3. **The footer said `live` while the engine was dead.** The stream being up and
+   the engine being alive are different things; the indicator now reflects both.
+4. The brand mark read as a hamburger icon at 13px.
+
+## Verified
+
+```
+no market   Nothing to quote / The engine stopped: indexer RegistryMarkets
+            failed: HTTP 404 / with the lifecycle explained beneath
+stale       Disconnected from the engine. The figures below were last updated
+            at 18:38:54 and are no longer live.
+```

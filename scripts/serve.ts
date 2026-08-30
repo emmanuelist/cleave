@@ -61,4 +61,10 @@ createServer(async (req, res) => {
 });
 
 runMaker({ live, minutes, size: Number(process.env.QUOTE_SIZE ?? 5), short }, broadcast)
-  .catch((e) => { console.error("engine stopped:", e?.message ?? e); });
+  .then(() => { broadcast({ ...state, live: false }); })
+  .catch((e) => {
+    const msg = String(e?.message ?? e);
+    console.error("engine stopped:", msg);
+    // The page should say what actually broke, not sit on a spinner.
+    broadcast({ ...state, live: false, fault: msg });
+  });
