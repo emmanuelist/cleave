@@ -558,3 +558,50 @@ Also fixed here: `PostOnlyWouldCross` no longer kills the run. Losing a race to
 a moving book is routine — a maker that treats it as fatal stops quoting the
 moment the market gets interesting. And selection now skips markets with under
 60s of runway, which were being picked only to roll off immediately.
+
+---
+
+# The interface, rendered — 2026-08-30
+
+`npm run serve -- --live --short`. Real market, real books, our own bids marked.
+
+```
+market      BTC-0-30AUG26-1315        12:42 to expiry
+pair        0.985                     edge 1.5pp
+position    Up 15  Down 15            15 complete sets
+reprices    64      rollovers 1       leg events 35
+
+lineage     BTC-0-30AUG26-1315        QUOTING
+            BTC-0-30AUG26-1300-DE0C   EXPIRED
+
+activity    14:01:59  LEG   naked Up — completing at 0.747 (budget 0.775)
+            14:02:00  FILL  pair completed
+            14:02:02  POST  Up bid 0.250
+```
+
+Those three activity lines are the whole strategy in sequence: a leg fills, the
+imbalance is detected **on-chain**, the pair is completed only because 0.747 sits
+under the 0.775 budget, and quoting resumes. Unattended.
+
+## Defects found by rendering, not by reading
+
+All six were invisible in source and obvious in a screenshot:
+
+1. **The coarse column sized its own segments in px from its own
+   `clientHeight`** — but a flex column's height comes from its children, so it
+   grew to ~800px and stretched every other panel. Percentages of a bounded
+   parent, always.
+2. The edge number clipped: 52px type inside a 20px band.
+3. The verdict sentence collided with the readout.
+4. Countdown never carried minutes into hours — `692:17 to expiry`.
+5. A three-column grid left ~400px of dead space in two panels.
+6. Favicon 404.
+
+## The design decision the render forced
+
+The edge is 1.5–3pp. On a true 0→1 scale that is a sliver, and the honest options
+were to draw a sliver nobody can read or to inflate it and lie. Neither is
+acceptable, so the column keeps true scale and a **vernier** expands 0.950–1.000
+beside it — coarse for honesty, fine for legibility. That is how a measuring
+instrument handles a fine reading, and it is only available to a product with a
+fixed redemption value to measure against.
