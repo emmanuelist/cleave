@@ -493,3 +493,68 @@ minutes-to-expiry binary should do.
 costs 0.99 and still redeems for 1. The arithmetic is indifferent to where in
 `(0,1)` the market sits, which is a genuine strength of the two-bid model over
 anything that reasons about direction: we never have to be right about ETH.
+
+---
+
+# Claim, and the bug it exposed — 2026-08-30
+
+## Redemption works, exactly
+
+```
+tUSDC 9945.435 -> 9965.435     +20.000
+tx 0xb785b4f03a6f0fcc68be476ad4dd617dd667ef21d6d3fac1531d91cb1116afd3
+```
+
+Two winning positions redeemed at exactly 1 each. No slippage, no fee.
+
+## Finding the positions at all
+
+Three wrong turns, each worth recording:
+
+1. **`balanceOf` on `poolAddress` reverts.** Outcome tokens live on a shared
+   **ERC-6909 singleton**, not the pool. `getMarketOnchain` returns that address
+   plus the market's `yesId` / `noId` — no need to derive ids.
+2. **`loadMarkets` does not retain settled markets.** A settled market leaves
+   the registry entirely; pools are recycled to the next market by `nonce`. The
+   comment in an earlier commit here — "settled markets leave the live list, not
+   the registry" — was wrong.
+3. **`listPastBinaryMarkets` is on the CLIENT**, not the package root.
+   `exchange.client.listPastBinaryMarkets({ limit })` is the only way to find a
+   redeemable position. Scanning `loadMarkets` for inactive rows never finds one.
+
+## The bug: the loop was blind to its own fills
+
+The claim sweep turned up **Up 15** and **Down 10** in settled markets we never
+bought deliberately. Those were maker fills. The loop had been filling all along
+while reporting `position Up 0 Down 0`, because leg detection used
+`fetchPositions` — indexer-backed, and returning nothing throughout.
+
+Consequences, all of which actually happened:
+
+- The claim that "nothing has ever filled passively" was false.
+- The leg-risk handler **never fired once**, because it never saw a leg.
+- Naked positions were carried into settlement unhedged. They happened to win.
+
+Position now reads ERC-6909 balances directly from the outcome-token singleton.
+**Anything that gates a trading decision must read the chain, not the indexer.**
+The indexer is for discovery; it is not a source of truth about your own money.
+
+## The strategy, working
+
+```
+13:10:23  leg risk: naked Down; completing at 0.648 (budget 0.662)
+13:10:24  Up 0.635 Down 0.352  pair 0.985  edge 1.5pp*  completed pair
+13:11:24  Up 0.622 Down 0.363  pair 0.985  edge 1.5pp*  hold
+
+leg events  16
+position    Up 15  Down 15   (flat / paired)
+```
+
+Bids rest, they get filled, a naked leg is detected on-chain, the pair is
+completed by crossing only while it stays under budget, and the loop ends
+**flat: 15 complete sets, each redeeming for exactly 1.**
+
+Also fixed here: `PostOnlyWouldCross` no longer kills the run. Losing a race to
+a moving book is routine — a maker that treats it as fatal stops quoting the
+moment the market gets interesting. And selection now skips markets with under
+60s of runway, which were being picked only to roll off immediately.

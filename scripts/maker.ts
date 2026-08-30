@@ -12,7 +12,9 @@
  *   npm run maker                        # dry run
  *   npm run maker -- --live --minutes 10
  */
-import { SomniaMarkets, isBinaryMarket, type UnifiedOrder, type UnifiedPosition } from "@somnia-chain/markets-sdk";
+import { SomniaMarkets, isBinaryMarket, erc6909Abi, type UnifiedOrder } from "@somnia-chain/markets-sdk";
+import { createPublicClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { loadConfig } from "../src/config.js";
 
 const cfg = loadConfig();
@@ -64,7 +66,9 @@ async function selectMarket(exchange: SomniaMarkets, prefer?: Pick): Promise<Pic
     if (!up || !down) continue;
     const i = m.info as { marketId: string; expiry?: string; intervalSec?: string | null };
     const expiry = Number(i.expiry ?? 0) * 1000;
-    if (expiry <= now) continue;
+    // Skip anything already locking — ROLL_LEAD_MS of runway minimum, or we
+    // select a market only to immediately roll off it.
+    if (expiry <= now + 60_000) continue;
     try {
       if ((await exchange.client.getMarketOnchain(i.marketId as `0x${string}`)).status !== 1) continue;
     } catch { continue; }
@@ -148,6 +152,10 @@ async function main() {
         // The book locks before the expiry timestamp. TradingNotActive is not a
         // failure — it is the rollover signal arriving ahead of the clock.
         if (name === "TradingNotActive" || name === "MarketNotTrading") { needsRoll = true; return undefined; }
+        // Losing the race to a moving book is routine, not a failure. Give up
+        // on THIS tick and try again on the next one; a maker that treats it as
+        // fatal simply stops quoting the moment the market gets interesting.
+        if (name === "PostOnlyWouldCross") return undefined;
         rejected = `${sym.endsWith("#YES") ? "Up" : "Down"}: ${name ?? (err as Error).message.slice(0, 70)}`;
         return undefined;
       }
@@ -155,11 +163,32 @@ async function main() {
     return undefined;
   };
 
-  /** Contracts held per outcome. Indexer-backed, so it lags a fast fill. */
+  // ── Position, read from the chain ─────────────────────────────────────────
+  // NOT fetchPositions. That view is indexer-backed and returned 0 through an
+  // entire session in which we were in fact filled repeatedly — the loop was
+  // blind to its own fills and carried naked legs into settlement without the
+  // leg-risk handler ever firing. Outcome balances live on a shared ERC-6909
+  // singleton whose address and per-market ids come from getMarketOnchain.
+  const account = privateKeyToAccount(cfg.privateKey as `0x${string}`);
+  const pub = createPublicClient({ chain: cfg.chain, transport: http(cfg.rpcUrl) });
+  let oc: { outcomeToken: `0x${string}`; yesId: bigint; noId: bigint } | undefined;
+  const loadOutcomeIds = async (marketId: string) => {
+    try { oc = await exchange.client.getMarketOnchain(marketId as `0x${string}`) as typeof oc; }
+    catch { oc = undefined; }
+  };
+  await loadOutcomeIds(mkt.marketId);
+
   const held = async () => {
-    const ps: UnifiedPosition[] = await exchange.fetchPositions([UP, DOWN]).catch(() => []);
-    const g = (s: string) => Number(ps.find((p) => p.symbol === s)?.contracts ?? 0);
-    return { up: g(UP), down: g(DOWN) };
+    if (!oc) return { up: 0, down: 0 };
+    const read = async (id: bigint) => {
+      try {
+        return Number(await pub.readContract({
+          address: oc!.outcomeToken, abi: erc6909Abi,
+          functionName: "balanceOf", args: [account.address, id],
+        }) as bigint) / 1e6;
+      } catch { return 0; }
+    };
+    return { up: await read(oc.yesId), down: await read(oc.noId) };
   };
 
   while (Date.now() < deadline) {
@@ -179,6 +208,7 @@ async function main() {
       const next = await selectMarket(exchange, mkt);
       if (!next) { line(`${t()}  no successor available — stopping`); break; }
       mkt = next; UP = next.up; DOWN = next.down;
+      await loadOutcomeIds(next.marketId);
       rolls++;
       describe(next);
       await Promise.all([exchange.watchOrderBook(UP, 5), exchange.watchOrderBook(DOWN, 5)]);

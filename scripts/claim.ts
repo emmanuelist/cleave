@@ -38,18 +38,12 @@ async function main() {
   line();
   line(`\x1b[1mClaim sweep — ${live ? "LIVE" : "dry run"}\x1b[0m`);
   line("─".repeat(70));
-  // listPastBinaryMarkets is not exported at the package root, but loadMarkets
-  // already returns every indexed market - the overwhelming majority of which
-  // are settled. Settled markets leave the LIVE list, not the registry.
-  const all = Object.values(await exchange.loadMarkets(true));
-  const past = all
-    .filter((m) => isBinaryMarket(m.info) && !m.active)
-    .map((m) => m.info as unknown as {
-      marketId: `0x${string}`; poolAddress: `0x${string}`; nonce?: string | number;
-      status: string; winningOutcome?: number | null; settlementFeeBps?: string | number;
-    })
-    .slice(0, SCAN);
-  line(`scanned    ${past.length} settled markets (of ${all.length} indexed)`);
+  // listPastBinaryMarkets is not exported at the package ROOT, but it lives on
+  // the client. This matters: a settled market leaves loadMarkets entirely
+  // (pools are recycled to the next market by nonce), so scanning loadMarkets
+  // for inactive rows will never find the position you are trying to redeem.
+  const past = await exchange.client.listPastBinaryMarkets({ limit: SCAN });
+  line(`scanned    ${past.length} past markets`);
 
   const inputs: ClaimableInput[] = [];
 
@@ -60,7 +54,7 @@ async function main() {
   for (const m of past) {
     let oc: { outcomeToken: `0x${string}`; yesId: bigint; noId: bigint };
     try {
-      oc = await exchange.client.getMarketOnchain(m.marketId) as typeof oc;
+      oc = await exchange.client.getMarketOnchain(m.marketId as `0x${string}`) as typeof oc;
     } catch { continue; }
     for (const idx of [0, 1] as const) {
       let bal = 0n;
@@ -76,7 +70,7 @@ async function main() {
         winningOutcome: m.winningOutcome ?? null,
         voided: String(m.status) === "Voided",
         status: String(m.status),
-        settlementFeeBps: BigInt(m.settlementFeeBps ?? 0),
+        settlementFeeBps: BigInt((m as unknown as { settlementFeeBps?: string | number | null }).settlementFeeBps ?? 0),
       });
     }
   }
@@ -95,7 +89,8 @@ async function main() {
     const amt = (c as unknown as { amount?: bigint; claimable?: bigint }).claimable
              ?? (c as unknown as { amount?: bigint }).amount ?? 0n;
     total += amt;
-    line(`  ${JSON.stringify(c).slice(0, 130)}`);
+    const j = JSON.stringify(c, (_k, v) => (typeof v === "bigint" ? `${v}` : v));
+    line(`  ${j.slice(0, 150)}`);
   }
   line(`total      ${formatUnits(total, 6)} tUSDC`);
 
