@@ -2,6 +2,7 @@
 
 **Buy every outcome for less than one. Settlement pays exactly one.**
 
+**[Watch the demo](https://youtu.be/YZZcwbx3hqw)** (2:28) ·
 **[cleave-ecru.vercel.app](https://cleave-ecru.vercel.app)** reads Somnia live in
 your browser, so the claim is checkable against the chain while you read it.
 
