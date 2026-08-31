@@ -13,8 +13,26 @@
  *   npm run film              # needs `npm run serve -- --live --short` warm
  */
 import { chromium, type Page } from "playwright";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { CUES, CAPTION_RUNTIME } from "./captions.js";
+import { NARRATION } from "./narration.js";
+import { readFileSync, existsSync } from "node:fs";
+
+/** Each segment runs as long as its narration actually takes, plus a tail to
+ *  let the last line land. Hand-tuned windows break the moment the voice
+ *  changes pace, and swapping TTS voices changes it a lot. */
+const TAIL = 4.5;
+function windowFor(segment: string, planned: number): number {
+  if (!existsSync("film/timing.json")) return planned;
+  try {
+    const t = JSON.parse(readFileSync("film/timing.json", "utf8")) as
+      Record<string, { at: number; secs: number }[]>;
+    const lines = t[segment];
+    if (!lines?.length) return planned;
+    const last = lines[lines.length - 1]!;
+    return Math.round((last.at + last.secs + TAIL) * 10) / 10;
+  } catch { return planned; }
+}
 
 const APP = process.env.APP_URL ?? "http://localhost:5173";
 const SITE = process.env.SITE_URL ?? "https://cleave-ecru.vercel.app";
@@ -37,15 +55,19 @@ async function untilPainted(page: Page, minChars = 400, timeoutMs = 40_000) {
   }
 }
 
-/** Hold until the segment has run for `secs` TOTAL, not `secs` more.
- *  Navigation and wait-for-paint happen first and used to be added on top, so
- *  every segment overran its window: the explorer alone put settlement 21s
- *  over, leaving half a minute of drone with nothing being said. */
-async function holdUntil(startedAt: number, secs: number) {
+/** Roll for `secs` of PAINTED footage, after setup.
+ *
+ *  The browser shows white while it navigates and loads, so those frames are
+ *  unusable. Counting them toward the window left the landing segment with 5s
+ *  of real footage for 17s of narration. So: hold the full window after setup,
+ *  record how long setup took, and let the cut trim it away. What survives is
+ *  exactly `secs` of painted picture. */
+const setupTimes: Record<string, number> = {};
+async function holdAfterSetup(name: string, startedAt: number, secs: number) {
   const spent = (Date.now() - startedAt) / 1000;
-  const left = Math.max(1.5, secs - spent);
-  process.stdout.write(`  setup ${spent.toFixed(1)}s, rolling ${left.toFixed(1)}s, total ${secs}s\n`);
-  await wait(left * 1000);
+  setupTimes[name] = +spent.toFixed(2);
+  process.stdout.write(`  setup ${spent.toFixed(1)}s (trimmed), rolling ${secs}s of picture\n`);
+  await wait(secs * 1000);
 }
 
 /** Captions are injected AFTER the page settles, so their clock starts when
@@ -62,25 +84,34 @@ async function segment(name: string, secs: number, go: (p: Page) => Promise<void
     viewport: { width: W, height: H },
     recordVideo: { dir: `${OUT}/${name}`, size: { width: W, height: H } },
     deviceScaleFactor: 1,
+    // The Somnia explorer is light-themed by default and flashed a full white
+    // frame at the end of the film. It honours prefers-color-scheme.
+    colorScheme: "dark",
   });
   const page = await ctx.newPage();
+  // Recording starts with the context, so the first frames were about:blank
+  // white. Paint the ground before navigating anywhere.
+  await page.goto("data:text/html,<body style=\"margin:0;background:#08090b\"></body>");
   const startedAt = Date.now();
   console.log(`\n▸ ${name}`);
   await go(page);
   await captions(page, name);
-  await holdUntil(startedAt, secs);
+  await holdAfterSetup(name, startedAt, secs);
   await ctx.close();     // flushes the video
   await browser.close();
 }
 
 async function main() {
+  if (existsSync("film/timing.json")) console.log("Sizing segments to film/timing.json");
+  else console.log("No film/timing.json: using planned windows. Run npm run voice first.");
+
   // Only clear the SEGMENT directories. Wiping all of film/ destroyed
   // narration.mp3 and voice/ that a previous step had produced.
   mkdirSync(OUT, { recursive: true });
   for (const name of Object.keys(CUES)) rmSync(`${OUT}/${name}`, { recursive: true, force: true });
 
   // 1. The claim, live, on the public site.
-  await segment("01-landing", 24, async (p) => {
+  await segment("01-landing", windowFor("01-landing", 24), async (p) => {
     await p.goto(SITE, { waitUntil: "domcontentloaded" });
     await untilPainted(p, 800);
     await wait(5000);                       // let the live chain read populate
@@ -88,14 +119,14 @@ async function main() {
 
   // 2. The instrument working. Long enough to catch leg events and a rollover,
   //    which arrive every ~30s at --short. This is the body of the demo.
-  await segment("02-instrument", 86, async (p) => {
+  await segment("02-instrument", windowFor("02-instrument", 86), async (p) => {
     await p.goto(APP, { waitUntil: "domcontentloaded" });
     await untilPainted(p, 600);
     await wait(2000);
   });
 
   // 3. The activity log alone, where the refusal is legible.
-  await segment("03-activity", 28, async (p) => {
+  await segment("03-activity", windowFor("03-activity", 28), async (p) => {
     await p.goto(APP, { waitUntil: "domcontentloaded" });
     await wait(2500);
     await p.evaluate(() => document.querySelector(".events")?.scrollIntoView({ block: "center" }));
@@ -104,12 +135,13 @@ async function main() {
   // 4. Settlement, on the explorer.
   // The explorer is slow. Wait for it to actually paint, then hold, so the
   // settlement beat is legible rather than a white rectangle.
-  await segment("04-settlement", 41, async (p) => {
+  await segment("04-settlement", windowFor("04-settlement", 41), async (p) => {
     await p.goto(TX, { waitUntil: "domcontentloaded", timeout: 45_000 }).catch(() => {});
     await untilPainted(p, 700, 45_000);
     await wait(2500);
   });
 
+  writeFileSync(`${OUT}/setup.json`, JSON.stringify(setupTimes, null, 2));
   console.log(`\nSegments in ${OUT}/. Next: npm run film:cut`);
 }
 

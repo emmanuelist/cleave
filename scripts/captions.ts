@@ -11,6 +11,7 @@
  * Judges watch muted, so these carry the argument on their own.
  */
 import { NARRATION } from "./narration.js";
+import { readFileSync } from "node:fs";
 
 export type Cue = { at: number; secs: number; text: string; kind?: "beat" | "note" };
 
@@ -18,7 +19,7 @@ const WPS = 2.6;            // calm delivery
 const LEAD = 0.35;          // captions land a beat before the voice
 
 /** Sentences, kept whole. A caption split mid-clause is unreadable at speed. */
-function sentences(text: string): string[] {
+export function sentences(text: string): string[] {
   return text
     .split(/(?<=\.)\s+/)
     .map((s) => s.trim())
@@ -48,9 +49,29 @@ function cuesFor(text: string, window: number): Cue[] {
   });
 }
 
-export const CUES: Record<string, Cue[]> = Object.fromEntries(
-  NARRATION.map((b) => [b.segment, cuesFor(b.text, b.secs)]),
-);
+/** Prefer measured sentence timings from the generated audio. Estimating from
+ *  words per second drifts within a segment, and a caption that no longer
+ *  matches the voice is worse than no caption. */
+function load(): Record<string, Cue[]> {
+  try {
+    const raw = readFileSync(new URL("../film/timing.json", import.meta.url).pathname, "utf8");
+    const t = JSON.parse(raw) as Record<string, { text: string; at: number; secs: number }[]>;
+    const out: Record<string, Cue[]> = {};
+    for (const [seg, lines] of Object.entries(t)) {
+      out[seg] = lines.map((l, i) => ({
+        at: Math.max(0, l.at - LEAD),
+        secs: l.secs + LEAD,
+        text: l.text,
+        ...(i === lines.length - 1 ? { kind: "beat" as const } : {}),
+      }));
+    }
+    return out;
+  } catch {
+    return Object.fromEntries(NARRATION.map((b) => [b.segment, cuesFor(b.text, b.secs)]));
+  }
+}
+
+export const CUES: Record<string, Cue[]> = load();
 
 export const CAPTION_RUNTIME = `
 (cues => {

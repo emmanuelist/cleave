@@ -13,6 +13,7 @@
  * then set ELEVENLABS_VOICE_ID.
  */
 import { NARRATION } from "./narration.js";
+import { sentences } from "./captions.js";
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { config as dotenv } from "dotenv";
@@ -69,9 +70,40 @@ async function main() {
 
   let cursor = 0;
   const parts: string[] = [];
+  // Sentence-level timings, so captions can be cut to what is ACTUALLY said
+  // rather than to a words-per-second guess. Estimates drift within a segment
+  // and the caption stops matching the voice.
+  const timing: Record<string, { text: string; at: number; secs: number }[]> = {};
+
   for (const b of NARRATION) {
+    const lines = sentences(b.text);
+    const pieces: string[] = [];
+    let t = 0;
+    timing[b.segment] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const pf = `${OUT}/${b.segment}-${String(i).padStart(2, "0")}.mp3`;
+      // Cache by line text. The pipeline runs voice twice (once for timings,
+      // once to pad to measured segments) and the free tier is ~10k chars a
+      // month against a ~2.7k script, so re-synthesising every pass would burn
+      // most of the allowance.
+      const stamp = `${pf}.txt`;
+      const unchanged = existsSync(pf) && existsSync(stamp) &&
+        readFileSync(stamp, "utf8") === lines[i]!;
+      if (unchanged) { /* reuse */ }
+      else {
+        if (KEY) await eleven(lines[i]!, pf); else local(lines[i]!, pf);
+        writeFileSync(stamp, lines[i]!);
+      }
+      const sd = dur(pf);
+      timing[b.segment]!.push({ text: lines[i]!, at: +t.toFixed(2), secs: +sd.toFixed(2) });
+      t += sd;
+      pieces.push(pf);
+    }
     const f = `${OUT}/${b.segment}.mp3`;
-    if (KEY) await eleven(b.text, f); else local(b.text, f);
+    const plist = `${OUT}/${b.segment}-parts.txt`;
+    writeFileSync(plist, pieces.map((x) => `file '${x.split("/").pop()}'`).join("\n"));
+    execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", plist,
+      "-c:a", "libmp3lame", "-b:a", "192k", f]);
     const window = measured[b.segment] ?? b.secs;
     const d = dur(f);
     const over = d > window;
@@ -90,7 +122,9 @@ async function main() {
   writeFileSync(list, parts.map((p) => `file '${p.split("/").pop()}'`).join("\n"));
   execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", list,
     "-c:a", "libmp3lame", "-b:a", "192k", "film/narration.mp3"]);
-  console.log(`\n  film/narration.mp3  (${dur("film/narration.mp3").toFixed(1)}s, target ${cursor}s)`);
+  writeFileSync("film/timing.json", JSON.stringify(timing, null, 2));
+  console.log(`\n  film/narration.mp3  (${dur("film/narration.mp3").toFixed(1)}s, target ${cursor.toFixed(1)}s)`);
+  console.log("  film/timing.json    sentence timings for the captions");
   if (!existsSync("film/cleave-silent.mp4")) console.log("  (run npm run film && npm run film:cut, then npm run film:mix)");
 }
 

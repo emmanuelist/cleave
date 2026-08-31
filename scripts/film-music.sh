@@ -30,7 +30,7 @@ ffmpeg -y -loglevel error \
     [m]lowpass=f=520,highpass=f=38,\
        aecho=0.8:0.85:520|1150:0.28|0.16,\
        afade=t=in:st=0:d=6,afade=t=out:st=$FADE:d=7,\
-       loudnorm=I=-31:TP=-9:LRA=6[out]" \
+       loudnorm=I=-24:TP=-9:LRA=5[out]" \
   -map "[out]" -c:a libmp3lame -b:a 160k "$OUT"
 
 d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT")

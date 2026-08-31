@@ -14,8 +14,16 @@ for dir in "$OUT"/[0-9]*; do
   src=$(find "$dir" -name '*.webm' | head -1)
   [ -n "$src" ] || { echo "  ! no video in $dir"; continue; }
   dst="$OUT/norm-$(printf %02d $i).mp4"
-  # One codec, one frame rate, one pixel format, so concat is lossless-safe.
-  ffmpeg -y -loglevel error -i "$src" \
+  # Playwright starts recording when the CONTEXT is created, before any
+  # navigation, so every segment opens on white about:blank. Trim the head.
+  # The manifest below measures the TRIMMED length, and voice pads to that, so
+  # this stays in sync automatically.
+  # Trim exactly the setup: navigation and load frames are white and unusable.
+  trim=$(python3 -c "
+import json,sys
+try: print(json.load(open('$OUT/setup.json')).get('$(basename "$dir")', 1.6))
+except Exception: print(1.6)")
+  ffmpeg -y -loglevel error -ss "$trim" -i "$src" \
     -vf "fps=30,scale=1440:900:flags=lanczos,format=yuv420p" \
     -c:v libx264 -preset slow -crf 18 -an "$dst"
   dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$dst")

@@ -22,8 +22,8 @@ ffmpeg -y -loglevel error -i "$V" -i "$N" -i "$M" \
          loudnorm=I=-16:TP=-1.5:LRA=11,apad,atrim=0:${vd}[v0]; \
     [v0]asplit=2[voice][key]; \
     [2:a]apad,atrim=0:${vd}[bedraw]; \
-    [bedraw][key]sidechaincompress=threshold=0.035:ratio=7:attack=18:release=420:makeup=1[bed]; \
-    [voice][bed]amix=inputs=2:normalize=0:weights=1 0.30,\
+    [bedraw][key]sidechaincompress=threshold=0.09:ratio=3.2:attack=25:release=520:makeup=1[bed]; \
+    [voice][bed]amix=inputs=2:normalize=0:weights=1 0.85,\
          loudnorm=I=-15:TP=-1.5:LRA=11[a]" \
   -map 0:v -map "[a]" -shortest -c:v copy -c:a aac -b:a 192k film/cleave-demo.mp4
 

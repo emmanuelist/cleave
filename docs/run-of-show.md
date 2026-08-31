@@ -155,6 +155,33 @@ npm run film:mix             # picture + voice + ducked bed -> film/cleave-demo.
 stays locked to the picture. Run voice first and it pads to the plan instead,
 which drifts.
 
+## Why the order is film-then-voice-then-film
+
+The pipeline is measured, not planned, because guessing goes wrong in both
+directions at once:
+
+- Segments are sized from the **actual narration length** (`film/timing.json`),
+  so changing voice or wording resizes the picture automatically.
+- Narration is padded to the **actual filmed length** (`film/segments.json`),
+  so the voice stays locked to the picture.
+- Captions are cut to **measured per-sentence audio**, not a words-per-second
+  estimate, which drifts within a segment until the caption no longer matches
+  what is being said.
+
+## The white frames
+
+Playwright begins recording when the browser context is created, and the browser
+paints white while it navigates and loads. Three attempts before this worked:
+darkening the page did not help because recording starts first; a fixed head
+trim did not help because white also appears mid-load; and counting setup toward
+the window starved the landing segment down to 5s of real footage for 17s of
+narration.
+
+What works: roll the full window **after** setup, record how long setup took
+(`film/setup.json`), and trim exactly that in the cut. What survives is only
+painted picture. The explorer is separately forced to `colorScheme: "dark"`,
+since it is light-themed by default and flashed a full white frame at the end.
+
 ## The voice
 
 `npm run voice` uses ElevenLabs when a key is present and macOS `say` otherwise.
