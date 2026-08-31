@@ -14,6 +14,7 @@
  */
 import { chromium, type Page } from "playwright";
 import { mkdirSync, rmSync } from "node:fs";
+import { CUES, CAPTION_RUNTIME } from "./captions.js";
 
 const APP = process.env.APP_URL ?? "http://localhost:5173";
 const SITE = process.env.SITE_URL ?? "https://cleave-ecru.vercel.app";
@@ -42,6 +43,14 @@ async function hold(page: Page, secs: number, label: string) {
   await wait(secs * 1000);
 }
 
+/** Captions are injected AFTER the page settles, so their clock starts when
+ *  the shot actually begins rather than when navigation did. */
+async function captions(page: Page, name: string) {
+  const cues = CUES[name];
+  if (!cues?.length) return;
+  await page.evaluate(CAPTION_RUNTIME.replace("__CUES__", JSON.stringify(cues)));
+}
+
 async function segment(name: string, secs: number, go: (p: Page) => Promise<void>) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({
@@ -52,6 +61,7 @@ async function segment(name: string, secs: number, go: (p: Page) => Promise<void
   const page = await ctx.newPage();
   console.log(`\n▸ ${name}`);
   await go(page);
+  await captions(page, name);
   await hold(page, secs, "rolling");
   await ctx.close();     // flushes the video
   await browser.close();
@@ -62,7 +72,7 @@ async function main() {
   mkdirSync(OUT, { recursive: true });
 
   // 1. The claim, live, on the public site.
-  await segment("01-landing", 14, async (p) => {
+  await segment("01-landing", 21, async (p) => {
     await p.goto(SITE, { waitUntil: "domcontentloaded" });
     await untilPainted(p, 800);
     await wait(5000);                       // let the live chain read populate
@@ -70,14 +80,14 @@ async function main() {
 
   // 2. The instrument working. Long enough to catch leg events and a rollover,
   //    which arrive every ~30s at --short. This is the body of the demo.
-  await segment("02-instrument", 75, async (p) => {
+  await segment("02-instrument", 70, async (p) => {
     await p.goto(APP, { waitUntil: "domcontentloaded" });
     await untilPainted(p, 600);
     await wait(2000);
   });
 
   // 3. The activity log alone, where the refusal is legible.
-  await segment("03-activity", 20, async (p) => {
+  await segment("03-activity", 23, async (p) => {
     await p.goto(APP, { waitUntil: "domcontentloaded" });
     await wait(2500);
     await p.evaluate(() => document.querySelector(".events")?.scrollIntoView({ block: "center" }));
@@ -86,7 +96,7 @@ async function main() {
   // 4. Settlement, on the explorer.
   // The explorer is slow. Wait for it to actually paint, then hold, so the
   // settlement beat is legible rather than a white rectangle.
-  await segment("04-settlement", 14, async (p) => {
+  await segment("04-settlement", 31, async (p) => {
     await p.goto(TX, { waitUntil: "domcontentloaded", timeout: 45_000 }).catch(() => {});
     await untilPainted(p, 700, 45_000);
     await wait(2500);

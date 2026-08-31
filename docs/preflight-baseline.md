@@ -693,3 +693,53 @@ read.
 Measured frequency: across 108 samples of ordinary operation the pair stayed
 between 0.972 and 0.990, so the window is correct. It is only near expiry that
 it blows out, which is exactly when a camera is most likely to be pointed at it.
+
+---
+
+# Captions, and a P&L finding that matters more
+
+## Captions
+
+Rendered inside the page during filming rather than burned on afterwards. This
+ffmpeg build ships without libass and libfreetype, so `drawtext`, `subtitles`
+and `ass` are all unavailable, and doing it in the page is better regardless:
+the captions inherit the product's own typeface instead of generic subtitle
+styling. Judges watch muted, so these carry the argument alone and narration
+becomes additive rather than load-bearing.
+
+First attempt put them bottom-centre, where the box **covered the exact activity
+log line it was describing**: `naked Up, completing at 0.971 (budget 0…` cut off
+mid-value, in the segment where the log is the entire point. They now sit right
+of the log text and left of the rail.
+
+## The finding: session P&L is not reliably positive
+
+Two measured sessions:
+
+```
+run 1   +3.47      long-dated market, book steady around 0.985
+run 2  -31.88      --short, two-minute markets, book swinging hard
+```
+
+Run 2's screen shows the mechanism: position Up 10 / Down 20, a **naked Down 10**
+marked at 0.214, and a log full of `exceeds budget, holding` and `could not
+complete`. Legs fill and the second leg has moved beyond budget before it can be
+completed, so the position sits unpaired and is marked at the book below what it
+cost.
+
+**Leg risk is the dominant term, and it is worst exactly where `--short` points
+the loop.** That flag was added to force rollovers on camera; it also selects
+the most volatile markets on the venue, which is the least favourable ground for
+this strategy.
+
+Two consequences:
+
+1. **Do not narrate a profitability claim.** The mechanism is proven and the
+   edge is real when pairs complete. Whether it nets positive over a session is
+   not established, and one of two measured sessions was firmly negative.
+2. **Film on normal markets, not `--short`.** The rollover beat is worth less
+   than showing the strategy on ground where it is not structurally disadvantaged.
+   A rollover still occurs on a long-dated market, just less often.
+
+Not yet measured: completion rate and net P&L across a long run in each
+configuration. That is the experiment worth doing before any claim is made.
