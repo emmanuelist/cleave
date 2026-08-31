@@ -198,6 +198,23 @@ npm run voice && npm run film:mix
 The script is in `scripts/narration.ts`, one block per segment. It deliberately
 claims nothing about profitability, because that is not established.
 
+## The landing scroll
+
+The page sets `html { scroll-behavior: smooth }` for its nav anchors. Driving a
+scroll with a per-frame `scrollTo` on top of that does not merely stutter, it
+does nothing at all: each call cancels and restarts the browser's easing toward
+a target that has already moved, so the page never advances. When the loop stops
+retargeting, the browser finally runs one animation and lurches the whole way.
+
+Measured over a 2.5s scroll to a 2745px target:
+
+```
+scroll-behavior: smooth   at loop end    0px   post-loop drift 2704px
+scroll-behavior: auto     at loop end 2745px   post-loop drift    0px
+```
+
+The film sets `scrollBehavior = "auto"` for the duration and restores it after.
+
 ## Why ENGINE_TICK_MS
 
 The engine reads every 6s by default. Across a 66s shot that is eleven points on

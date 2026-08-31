@@ -119,18 +119,25 @@ async function main() {
     await wait(5500);                       // let the live chain read populate
     void p.evaluate(`
       (async () => {
-        const ease = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
         const doc = document.documentElement;
+        // The page sets html{scroll-behavior:smooth} for its nav anchors. Left
+        // on, every per-frame scrollTo starts a NEW browser easing toward a
+        // target that has already moved, and the two easings fight: that is the
+        // bounce. Drive the position directly and restore the page's setting.
+        const prev = doc.style.scrollBehavior;
+        doc.style.scrollBehavior = 'auto';
+        const ease = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
         const end = Math.min(doc.scrollHeight - innerHeight, innerHeight * 3.05);
         const dur = 13000, t0 = performance.now();
         await new Promise(done => {
           const step = now => {
             const k = Math.min(1, (now - t0) / dur);
-            scrollTo(0, end * ease(k));
+            window.scrollTo(0, Math.round(end * ease(k)));
             k < 1 ? requestAnimationFrame(step) : done();
           };
           requestAnimationFrame(step);
         });
+        doc.style.scrollBehavior = prev;
       })()
     `).catch(() => {});
   });
