@@ -9,6 +9,24 @@ the site, and as the closing line of the video. That repetition is deliberate.
 
 ## Vision
 
+The field caps at **256 characters**, so the long version below does not fit.
+Use this (254 chars), which keeps the two differentiators (no inventory, no
+directional view) and still closes on the thesis verbatim:
+
+> Both outcomes of a prediction market settle at exactly 1 together, yet trade
+> points apart with nobody in the gap. Cleave rests a bid on each, holds no
+> inventory and takes no view on price. Buy every outcome for less than one.
+> Settlement pays exactly one.
+
+## Optional profile fields
+
+| Field | Value |
+|---|---|
+| Layer-1s | Somnia |
+| Innovation domains | DeFi, Prediction Markets, DEX |
+
+## Long version, for the Details step or anywhere without a cap
+
 > Prediction markets on DreamDEX quote two outcomes that together must settle at
 > exactly 1. In practice they trade two to three points apart, and almost nobody
 > stands in that gap: the books are thin, one-sided for long stretches, and
