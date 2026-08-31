@@ -15,6 +15,7 @@
 import { chromium, type Page } from "playwright";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { CUES, CAPTION_RUNTIME } from "./captions.js";
+import { MOVES, POINTER_RUNTIME } from "./pointer.js";
 import { NARRATION } from "./narration.js";
 import { readFileSync, existsSync } from "node:fs";
 
@@ -74,8 +75,22 @@ async function holdAfterSetup(name: string, startedAt: number, secs: number) {
  *  the shot actually begins rather than when navigation did. */
 async function captions(page: Page, name: string) {
   const cues = CUES[name];
-  if (!cues?.length) return;
-  await page.evaluate(CAPTION_RUNTIME.replace("__CUES__", JSON.stringify(cues)));
+  if (cues?.length) {
+    try {
+      await page.evaluate(CAPTION_RUNTIME.replace("__CUES__", JSON.stringify(cues)));
+      process.stdout.write(`  captions: ${cues.length} cues injected\n`);
+    } catch (e) { process.stdout.write(`  captions FAILED: ${(e as Error).message.slice(0, 90)}\n`); }
+  }
+  const moves = MOVES[name];
+  if (moves?.length) {
+    try {
+      await page.evaluate(POINTER_RUNTIME.replace("__MOVES__", JSON.stringify(moves)));
+      const ok = await page.evaluate(() => !!document.getElementById("__ptr"));
+      process.stdout.write(`  pointer: ${moves.length} moves injected, element ${ok ? "present" : "MISSING"}\n`);
+    } catch (e) { process.stdout.write(`  pointer FAILED: ${(e as Error).message.slice(0, 90)}\n`); }
+  } else {
+    process.stdout.write(`  pointer: no moves for ${name}\n`);
+  }
 }
 
 async function segment(name: string, secs: number, go: (p: Page) => Promise<void>) {

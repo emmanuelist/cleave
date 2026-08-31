@@ -55,7 +55,7 @@ directional view) and still closes on the thesis verbatim:
 |---|---|
 | GitHub | https://github.com/emmanuelist/cleave |
 | Live | https://cleave-ecru.vercel.app |
-| Video | https://youtu.be/YZZcwbx3hqw |
+| Video | https://youtu.be/TbUcrJLFkA8 |
 
 ## If asked what is built and working
 
