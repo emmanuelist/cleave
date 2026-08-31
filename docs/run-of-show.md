@@ -143,12 +143,43 @@ real Somnia markets. Nothing is stubbed and no footage is synthesised.
 ## The pipeline
 
 ```bash
-npm run serve -- --live --short     # leave warm ~90s so activity fills
-npm run film                        # records 4 segments, ~2.5 min
-npm run film:cut                    # assembles film/cleave-silent.mp4
-# record narration on your Mac (Voice Memos or QuickTime)
-npm run film:voice -- ~/voice.m4a   # muxes it, cleaned and levelled
+npm run serve -- --live      # NOT --short; leave warm ~90s
+npm run film                 # 4 segments, exact windows, 3:00
+npm run film:cut             # assembles, and writes film/segments.json
+npm run voice                # narration, locked to measured segment lengths
+npm run film:mix             # picture + voice + ducked bed -> film/cleave-demo.mp4
 ```
+
+**Order matters.** `film:cut` measures what was actually filmed and writes
+`segments.json`; `voice` pads each block to those measured lengths so the voice
+stays locked to the picture. Run voice first and it pads to the plan instead,
+which drifts.
+
+## The voice
+
+`npm run voice` uses ElevenLabs when a key is present and macOS `say` otherwise.
+The fallback proves the pipeline; it sounds dated and is not what should ship.
+
+```bash
+echo 'ELEVENLABS_API_KEY=...' >> .env
+# optional: pick a voice
+curl -H "xi-api-key: $KEY" https://api.elevenlabs.io/v1/voices
+echo 'ELEVENLABS_VOICE_ID=...' >> .env
+npm run voice && npm run film:mix
+```
+
+The script is in `scripts/narration.ts`, one block per segment. It deliberately
+claims nothing about profitability, because that is not established.
+
+## The bed
+
+`scripts/film-music.sh` synthesises it: a drone on a perfect fifth, movement
+from detuned pairs beating against each other, filtered to a bed and mixed at
+roughly -28 dB under a sidechain duck. Synthesised rather than sourced so there
+is no licensing question on a submission and nothing to attribute.
+
+**Listen to it before shipping.** A bed that gets noticed has failed, and this
+one has never been heard by anyone who built it.
 
 `film:voice` runs light denoise, a 90Hz high-pass, gentle compression and
 loudness normalisation to -16 LUFS, which is the streaming/broadcast target.

@@ -37,10 +37,15 @@ async function untilPainted(page: Page, minChars = 400, timeoutMs = 40_000) {
   }
 }
 
-/** Hold on a page for `secs`, doing nothing. The app is live; it moves on its own. */
-async function hold(page: Page, secs: number, label: string) {
-  process.stdout.write(`  ${label} … ${secs}s\n`);
-  await wait(secs * 1000);
+/** Hold until the segment has run for `secs` TOTAL, not `secs` more.
+ *  Navigation and wait-for-paint happen first and used to be added on top, so
+ *  every segment overran its window: the explorer alone put settlement 21s
+ *  over, leaving half a minute of drone with nothing being said. */
+async function holdUntil(startedAt: number, secs: number) {
+  const spent = (Date.now() - startedAt) / 1000;
+  const left = Math.max(1.5, secs - spent);
+  process.stdout.write(`  setup ${spent.toFixed(1)}s, rolling ${left.toFixed(1)}s, total ${secs}s\n`);
+  await wait(left * 1000);
 }
 
 /** Captions are injected AFTER the page settles, so their clock starts when
@@ -59,20 +64,23 @@ async function segment(name: string, secs: number, go: (p: Page) => Promise<void
     deviceScaleFactor: 1,
   });
   const page = await ctx.newPage();
+  const startedAt = Date.now();
   console.log(`\n▸ ${name}`);
   await go(page);
   await captions(page, name);
-  await hold(page, secs, "rolling");
+  await holdUntil(startedAt, secs);
   await ctx.close();     // flushes the video
   await browser.close();
 }
 
 async function main() {
-  rmSync(OUT, { recursive: true, force: true });
+  // Only clear the SEGMENT directories. Wiping all of film/ destroyed
+  // narration.mp3 and voice/ that a previous step had produced.
   mkdirSync(OUT, { recursive: true });
+  for (const name of Object.keys(CUES)) rmSync(`${OUT}/${name}`, { recursive: true, force: true });
 
   // 1. The claim, live, on the public site.
-  await segment("01-landing", 21, async (p) => {
+  await segment("01-landing", 24, async (p) => {
     await p.goto(SITE, { waitUntil: "domcontentloaded" });
     await untilPainted(p, 800);
     await wait(5000);                       // let the live chain read populate
@@ -80,14 +88,14 @@ async function main() {
 
   // 2. The instrument working. Long enough to catch leg events and a rollover,
   //    which arrive every ~30s at --short. This is the body of the demo.
-  await segment("02-instrument", 70, async (p) => {
+  await segment("02-instrument", 86, async (p) => {
     await p.goto(APP, { waitUntil: "domcontentloaded" });
     await untilPainted(p, 600);
     await wait(2000);
   });
 
   // 3. The activity log alone, where the refusal is legible.
-  await segment("03-activity", 23, async (p) => {
+  await segment("03-activity", 28, async (p) => {
     await p.goto(APP, { waitUntil: "domcontentloaded" });
     await wait(2500);
     await p.evaluate(() => document.querySelector(".events")?.scrollIntoView({ block: "center" }));
@@ -96,7 +104,7 @@ async function main() {
   // 4. Settlement, on the explorer.
   // The explorer is slow. Wait for it to actually paint, then hold, so the
   // settlement beat is legible rather than a white rectangle.
-  await segment("04-settlement", 31, async (p) => {
+  await segment("04-settlement", 41, async (p) => {
     await p.goto(TX, { waitUntil: "domcontentloaded", timeout: 45_000 }).catch(() => {});
     await untilPainted(p, 700, 45_000);
     await wait(2500);

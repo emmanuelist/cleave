@@ -19,7 +19,10 @@
     "serve": "tsx scripts/serve.ts",
     "film": "tsx scripts/film.ts",
     "film:cut": "bash scripts/film-cut.sh",
-    "film:voice": "bash scripts/film-voice.sh"
+    "film:voice": "bash scripts/film-voice.sh",
+    "voice": "tsx scripts/voice.ts",
+    "film:mix": "bash scripts/film-mix.sh",
+    "film:music": "bash scripts/film-music.sh"
   },
   "dependencies": {
     "@somnia-chain/markets-sdk": "0.27.0",
