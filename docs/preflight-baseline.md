@@ -647,3 +647,49 @@ no market   Nothing to quote / The engine stopped: indexer RegistryMarkets
 stale       Disconnected from the engine. The figures below were last updated
             at 18:38:54 and are no longer live.
 ```
+
+---
+
+# Book value, and the bug that hid it
+
+## The number a judge asks for first
+
+Until now nothing on screen answered "did it make money". It does now, with the
+derivation shown so it can be checked rather than believed:
+
+```
+Equity          9560.02        Session  +3.47
+Free collateral                        9540.11
+In resting bids                           4.90
+Complete sets  at par                    15.00
+Unmatched leg  at book                    0.00
+```
+
+**Complete sets are marked at par, the unmatched leg at the book.** That is not
+a convenience: a complete set redeems at exactly 1.000 whatever happens, so
+marking it at the book would understate it and imply risk that does not exist.
+Only the unmatched remainder carries price risk, and only it is marked.
+
+Wallet balance alone is badly wrong here, because resting bids move collateral
+out of the wallet. Equity has to include what is committed to open orders or a
+working maker looks like it is losing money.
+
+## Two bugs found on the way
+
+**A single null reference blanked the whole interface.** `renderUnity` threw on
+a missing element and killed every subsequent panel, leaving a half-drawn page
+that still looked plausible: header populated, market and countdown live, but
+"Acquiring market" and empty panels below. Rendering is now fault-isolated per
+panel, so one broken panel degrades one panel. A half-drawn page that looks
+plausible is worse than a visibly broken one.
+
+**The vernier lied outside its window.** Filming caught a market 19 seconds from
+expiry with a pair cost of 0.684, far below the 0.950 floor. The old code
+clamped it, printing "0.684" at the exact position the scale gradation reads
+0.950. It now goes **off scale** and says so, which is what an instrument with a
+fixed range does. Auto-rescaling was the wrong fix: a scale that moves cannot be
+read.
+
+Measured frequency: across 108 samples of ordinary operation the pair stayed
+between 0.972 and 0.990, so the window is correct. It is only near expiry that
+it blows out, which is exactly when a camera is most likely to be pointed at it.

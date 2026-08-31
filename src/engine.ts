@@ -6,7 +6,7 @@
  * onto the one that trades.
  */
 import { SomniaMarkets, isBinaryMarket, erc6909Abi, type UnifiedOrder } from "@somnia-chain/markets-sdk";
-import { createPublicClient, http, type PublicClient } from "viem";
+import { createPublicClient, http, erc20Abi, type PublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadConfig } from "./config.js";
 
@@ -25,6 +25,17 @@ export interface EngineState {
   book: { upBid?: number; upAsk?: number; downBid?: number; downAsk?: number; upDepth: Level[]; downDepth: Level[] };
   quote: { up?: number; down?: number; pair?: number; edge?: number; capped: boolean };
   position: { up: number; down: number };
+  /** Mark-to-market equity, in tUSDC. Resting bids move collateral out of the
+   *  wallet, so wallet balance alone badly understates it. */
+  pnl: {
+    startEquity?: number;   // equity at the first tick of this session
+    wallet: number;         // free collateral
+    locked: number;         // collateral committed to resting bids
+    paired: number;         // complete sets, which redeem at exactly 1.000
+    naked: number;          // unmatched legs, marked at the live book
+    equity: number;
+    net: number;            // equity - startEquity
+  };
   stats: { reprices: number; rolls: number; legEvents: number; ticks: number };
   lineage: { symbol: string; expiry: number; state: "active" | "rolled" }[];
   events: EngineEvent[];
@@ -40,6 +51,7 @@ export function emptyState(): EngineState {
   return {
     live: false, book: { upDepth: [], downDepth: [] }, quote: { capped: false },
     position: { up: 0, down: 0 },
+    pnl: { wallet: 0, locked: 0, paired: 0, naked: 0, equity: 0, net: 0 },
     stats: { reprices: 0, rolls: 0, legEvents: 0, ticks: 0 },
     lineage: [], events: [], updatedAt: Date.now(),
   };
@@ -199,6 +211,34 @@ export async function runMaker(opts: RunOpts, emit: (s: EngineState) => void): P
 
     const pos = await held();
     st.position = pos;
+
+    // ── Mark to market ────────────────────────────────────────────────────
+    // Complete sets are worth exactly 1.000 each whatever happens, so they are
+    // marked at par, not at the book. Only the unmatched remainder carries
+    // price risk, and that is marked at the live bid.
+    const collateral = (cfg.addresses as { collateral: `0x${string}` }).collateral;
+    let wallet = 0;
+    try {
+      wallet = Number(await pub.readContract({
+        address: collateral, abi: erc20Abi, functionName: "balanceOf", args: [account.address],
+      }) as bigint) / 1e6;
+    } catch { wallet = st.pnl.wallet; }
+
+    let locked = 0;
+    for (const [o, px] of [[upOrder, upBid], [downOrder, downBid]] as const) {
+      if (o?.price !== undefined) locked += o.price * (Number(o.amount ?? opts.size) - Number(o.filled ?? 0));
+    }
+
+    const paired = Math.min(pos.up, pos.down);              // redeems at 1.000
+    const nakedQty = Math.abs(pos.up - pos.down);
+    const nakedMark = pos.up > pos.down ? upBid : downBid;  // the price we could exit at
+    const naked = nakedQty * nakedMark;
+    const equity = wallet + locked + paired + naked;
+    if (st.pnl.startEquity === undefined) st.pnl.startEquity = equity;
+    st.pnl = {
+      startEquity: st.pnl.startEquity, wallet, locked, paired, naked, equity,
+      net: equity - st.pnl.startEquity,
+    };
 
     if (opts.live && pos.up !== pos.down) {
       st.stats.legEvents++;

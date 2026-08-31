@@ -74,13 +74,24 @@ function renderUnity(s) {
   $("pUp").textContent = f3(up);
   $("pDown").textContent = f3(down);
 
-  // Vernier: same quantity, expanded. Clamped so a pair below the window
-  // floor pins to the bottom rather than escaping the track.
-  const frac = pair === undefined ? 0 : Math.min(1, Math.max(0, (1 - pair) / (1 - V_FLOOR)));
+  // Vernier: same quantity, expanded twentyfold over 0.950 to 1.000.
+  // Near expiry the pair can fall far outside that window. A fixed scale that
+  // silently clamps would print the real value on top of a gradation reading
+  // something else, so instead it goes OFF SCALE, which is what an instrument
+  // with a fixed range actually does.
+  const raw = pair === undefined ? 0 : (1 - pair) / (1 - V_FLOOR);
+  const frac = Math.min(1, Math.max(0, raw));
+  const offScale = pair !== undefined && raw > 1;
   $("vPair").style.top = `${(frac * 100).toFixed(2)}%`;
   $("vGap").style.height = `${(frac * 100).toFixed(2)}%`;
   $("vPaid").style.top = `${(frac * 100).toFixed(2)}%`;
   $("vPairVal").textContent = f3(pair);
+  document.querySelector(".v-track")?.classList.toggle("off", offScale);
+  const off = $("vOff");
+  if (off) {
+    off.hidden = !offScale;
+    if (offScale) $("vOffVal").textContent = `pair ${f3(pair)}`;
+  }
 
   $("rUp").textContent = f3(up);
   $("rDown").textContent = f3(down);
@@ -139,6 +150,23 @@ function renderBook(elId, topId, levels, mine) {
     const q = document.createElement("span"); q.textContent = size;
     li.append(p, q); ol.append(li);
   }
+}
+
+const f2 = (n) => (n === undefined || n === null ? "—" : n.toFixed(2));
+
+function renderPnl(s) {
+  const p = s.pnl;
+  if (!p) return;
+  $("pEquity").textContent = f2(p.equity);
+  $("pWallet").textContent = f2(p.wallet);
+  $("pLocked").textContent = f2(p.locked);
+  $("pPaired").textContent = f2(p.paired);
+  $("pNaked").textContent = f2(p.naked);
+  const n = p.net ?? 0;
+  const el = $("pNet");
+  // A tenth of a tUSDC is noise on a book this size; do not colour it.
+  el.dataset.sign = Math.abs(n) < 0.1 ? "flat" : n > 0 ? "up" : "down";
+  el.textContent = `${n >= 0 ? "+" : ""}${f2(n)}`;
 }
 
 function renderPosition(s) {
@@ -205,17 +233,32 @@ function tickCountdown() {
     : `${m}:${String(sec).padStart(2, "0")} to expiry`;
 }
 
+// Each panel renders inside its own boundary. A null element or a malformed
+// frame should blank ONE panel, not the whole interface: a single missing node
+// previously threw inside renderUnity and killed every subsequent call, leaving
+// a half-drawn page that still looked plausible.
+function guard(name, fn) {
+  try { fn(); }
+  catch (err) {
+    if (!guard.seen) guard.seen = new Set();
+    if (!guard.seen.has(name)) { guard.seen.add(name); console.error(`[cleave] ${name} failed:`, err); }
+  }
+}
+
 function render(s) {
   latest = s;
-  driveEffects(s);
-  renderChrome(s);
-  renderUnity(s);
-  renderBook("bUp", "bUpTop", s.book.upDepth, s.quote.up);
-  renderBook("bDown", "bDownTop", s.book.downDepth, s.quote.down);
-  renderPosition(s);
-  renderLineage(s);
-  renderEvents(s);
-  tickCountdown();
+  guard("effects", () => driveEffects(s));
+  guard("chrome", () => renderChrome(s));
+  guard("unity", () => renderUnity(s));
+  guard("books", () => {
+    renderBook("bUp", "bUpTop", s.book.upDepth, s.quote.up);
+    renderBook("bDown", "bDownTop", s.book.downDepth, s.quote.down);
+  });
+  guard("pnl", () => renderPnl(s));
+  guard("position", () => renderPosition(s));
+  guard("lineage", () => renderLineage(s));
+  guard("events", () => renderEvents(s));
+  guard("countdown", () => tickCountdown());
 }
 
 document.body.classList.add("boot");

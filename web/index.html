@@ -67,6 +67,7 @@
           <div class="v-rule v-unity"><span>1.000</span></div>
           <div class="v-gap" id="vGap"></div>
           <div class="v-rule v-pair" id="vPair"><span id="vPairVal"></span></div>
+          <div class="v-off" id="vOff" hidden>off scale<br><span id="vOffVal"></span></div>
           <div class="v-floor"><span>0.950</span></div>
         </div>
         <div class="v-read">
@@ -94,6 +95,27 @@
   </section>
 
   <div class="rail">
+  <!-- ── Book value ─────────────────────────────────────────────────── -->
+  <section class="pnl" aria-labelledby="pnl-h">
+    <h2 id="pnl-h" class="eyebrow">Book value <span class="hint">marked to market</span></h2>
+    <div class="pnl-top">
+      <div>
+        <span class="pnl-k">Equity</span>
+        <span class="num pnl-v" id="pEquity">—</span>
+      </div>
+      <div class="pnl-net">
+        <span class="pnl-k">Session</span>
+        <span class="num pnl-v" id="pNet" data-sign="flat">—</span>
+      </div>
+    </div>
+    <dl class="pnl-rows">
+      <div><dt>Free collateral</dt><dd class="num" id="pWallet">—</dd></div>
+      <div><dt>In resting bids</dt><dd class="num" id="pLocked">—</dd></div>
+      <div><dt>Complete sets <b>at par</b></dt><dd class="num" id="pPaired">—</dd></div>
+      <div><dt>Unmatched leg <b>at book</b></dt><dd class="num" id="pNaked">—</dd></div>
+    </dl>
+  </section>
+
   <!-- ── Books ──────────────────────────────────────────────────────── -->
   <section class="books" aria-labelledby="books-h">
     <h2 id="books-h" class="eyebrow">Resting bids <span class="hint">ours marked</span></h2>

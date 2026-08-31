@@ -97,7 +97,7 @@ body {
 }
 .stale-dot{width:6px;height:6px;border-radius:50%;background:var(--naked);flex:none;animation:pulseDot 1.6s ease-in-out infinite}
 @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.25}}
-body.stale .edge-num,body.stale .pos-v,body.stale .readout dd,body.stale .levels li,
+body.stale .edge-num,body.stale .pos-v,body.stale .pnl-v,body.stale .readout dd,body.stale .levels li,
 body.stale .trace,body.stale .seg-label b,body.stale .book-head .num{
   opacity:.42;filter:saturate(.35);
 }
@@ -122,7 +122,7 @@ main {
   grid-template-areas: "unity rail" "events rail";
   height: calc(100vh - 52px - 30px);
 }
-.rail { grid-area: rail; display: grid; grid-template-rows: auto auto 1fr; gap: 1px;
+.rail { grid-area: rail; display: grid; grid-template-rows: auto auto auto 1fr; gap: 1px;
         background: var(--hair); padding: 0; }
 .rail > section { padding: 16px 18px; }
 section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdrop-filter: blur(7px) saturate(115%); padding: 16px 18px; min-width: 0; overflow: hidden; }
@@ -206,6 +206,18 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
   border-bottom: 0; transition: height .5s cubic-bezier(.2,.7,.2,1);
 }
 
+/* A fixed scale that silently clamps is a lying instrument. When the pair
+   falls outside the window the vernier says so, rather than pinning a value
+   on top of a gradation that reads something else. */
+.v-off {
+  position: absolute; left: 0; right: 0; bottom: 8px; text-align: center;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+  color: var(--naked); text-transform: uppercase; line-height: 1.7;
+}
+.v-off span { letter-spacing: -.02em; font-size: 12px; text-transform: none; }
+.v-track.off .v-pair span { display: none; }
+.v-track.off .v-floor span { opacity: .3; }
+
 .v-read { align-self: center; display: flex; flex-direction: column; gap: 2px; min-width: 0; width: 100%; }
 .edge-num {
   font-family: var(--mono); font-size: clamp(34px, 4.4vw, 58px); font-weight: 500;
@@ -261,6 +273,25 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
 }
 .levels li.mine::before { background: var(--under); opacity: .16; }
 .levels .empty { color: var(--rolled); justify-content: flex-start; }
+
+/* ── Book value ─────────────────────────────────────────────────────
+   The question a judge asks first. Complete sets are marked at par because
+   they redeem at exactly 1.000 whatever happens; only the unmatched leg is
+   marked at the book, because only it carries price risk.
+   ----------------------------------------------------------------- */
+.pnl-top { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: end; }
+.pnl-top > div { display: flex; flex-direction: column; gap: 2px; }
+.pnl-net { text-align: right; }
+.pnl-k { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: var(--ink-mute); }
+.pnl-v { font-size: 25px; font-weight: 500; letter-spacing: -.03em; }
+#pNet[data-sign="up"]   { color: var(--under); }
+#pNet[data-sign="down"] { color: var(--over); }
+#pNet[data-sign="flat"] { color: var(--ink-mute); }
+.pnl-rows { display: grid; gap: 7px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--hair); }
+.pnl-rows div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.pnl-rows dt { font-size: 11px; color: var(--ink-mute); }
+.pnl-rows dt b { font-weight: 400; color: var(--rolled); font-family: var(--mono); font-size: 9.5px; letter-spacing: .04em; }
+.pnl-rows dd { margin: 0; font-size: 12px; color: var(--ink-dim); }
 
 /* ── Position ───────────────────────────────────────────────────────── */
 .pos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -382,7 +413,19 @@ section { background: color-mix(in srgb, var(--panel) 62%, transparent); backdro
   .v-rule span, .v-floor span { left: 4px; font-size: 9px; }
   .seg-label { font-size: 8px; letter-spacing: .06em; }
   .seg-label b { display: block; margin: 1px 0 0; }
-  .v-read { align-self: center; }
+  /* A fixed scale that silently clamps is a lying instrument. When the pair
+   falls outside the window the vernier says so, rather than pinning a value
+   on top of a gradation that reads something else. */
+.v-off {
+  position: absolute; left: 0; right: 0; bottom: 8px; text-align: center;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+  color: var(--naked); text-transform: uppercase; line-height: 1.7;
+}
+.v-off span { letter-spacing: -.02em; font-size: 12px; text-transform: none; }
+.v-track.off .v-pair span { display: none; }
+.v-track.off .v-floor span { opacity: .3; }
+
+.v-read { align-self: center; }
   .edge-num { font-size: 42px; }
   .readout { margin-top: 12px; }
   .trace { height: 76px; }
