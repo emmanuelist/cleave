@@ -102,13 +102,23 @@ export const CAPTION_RUNTIME = `
   document.head.appendChild(css);
   document.body.appendChild(wrap);
   const el = wrap.querySelector('.__cap-t');
-  for (const c of cues) {
+  // Sentences run back to back, so the caption SWAPS text and stays up. An
+  // independent hide timer per cue meant the previous cue's hide fired after
+  // the next cue had already shown, and every caption flashed off immediately.
+  cues.forEach((c, i) => {
     setTimeout(() => {
-      el.textContent = c.text;
-      wrap.classList.toggle('beat', c.kind === 'beat');
-      wrap.classList.add('on');
+      const swap = () => {
+        el.textContent = c.text;
+        wrap.classList.toggle('beat', c.kind === 'beat');
+        wrap.classList.add('on');
+      };
+      if (i === 0) return swap();
+      // Brief dip between lines so the change reads as a change.
+      wrap.classList.remove('on');
+      setTimeout(swap, 170);
     }, c.at * 1000);
-    setTimeout(() => wrap.classList.remove('on'), (c.at + c.secs - 0.25) * 1000);
-  }
+  });
+  const last = cues[cues.length - 1];
+  setTimeout(() => wrap.classList.remove('on'), (last.at + last.secs + 0.4) * 1000);
 })(__CUES__);
 `;

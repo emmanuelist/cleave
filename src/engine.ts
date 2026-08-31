@@ -168,7 +168,9 @@ export async function runMaker(opts: RunOpts, emit: (s: EngineState) => void): P
   };
 
   const deadline = Date.now() + opts.minutes * 60_000;
-  const interval = opts.intervalMs ?? 6_000;
+  // 6s between reads leaves ~11 points across a 66s shot, and the trace draws
+  // as a staircase. Filming sets this lower so the line actually moves.
+  const interval = opts.intervalMs ?? Number(process.env.ENGINE_TICK_MS ?? 6_000);
 
   while (Date.now() < deadline) {
     if (mkt && (needsRoll || Date.now() >= mkt.expiry - ROLL_LEAD_MS)) {

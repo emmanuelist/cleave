@@ -143,7 +143,7 @@ real Somnia markets. Nothing is stubbed and no footage is synthesised.
 ## The pipeline
 
 ```bash
-npm run serve -- --live      # NOT --short; leave warm ~90s
+ENGINE_TICK_MS=2000 npm run serve -- --live   # NOT --short; warm ~90s
 npm run film                 # 4 segments, exact windows, 3:00
 npm run film:cut             # assembles, and writes film/segments.json
 npm run voice                # narration, locked to measured segment lengths
@@ -197,6 +197,13 @@ npm run voice && npm run film:mix
 
 The script is in `scripts/narration.ts`, one block per segment. It deliberately
 claims nothing about profitability, because that is not established.
+
+## Why ENGINE_TICK_MS
+
+The engine reads every 6s by default. Across a 66s shot that is eleven points on
+the session trace, and the line draws as a staircase rather than moving. Filming
+sets it to 2000 so the trace has enough points to look alive. It costs more RPC
+reads, which on testnet costs nothing.
 
 ## The bed
 

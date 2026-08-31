@@ -111,10 +111,28 @@ async function main() {
   for (const name of Object.keys(CUES)) rmSync(`${OUT}/${name}`, { recursive: true, force: true });
 
   // 1. The claim, live, on the public site.
+  // Hold on the live readout first, then walk down the page so the rest of it
+  // is actually seen. A hero that never scrolls looks like a screenshot.
   await segment("01-landing", windowFor("01-landing", 24), async (p) => {
     await p.goto(SITE, { waitUntil: "domcontentloaded" });
     await untilPainted(p, 800);
-    await wait(5000);                       // let the live chain read populate
+    await wait(5500);                       // let the live chain read populate
+    void p.evaluate(`
+      (async () => {
+        const ease = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+        const doc = document.documentElement;
+        const end = Math.min(doc.scrollHeight - innerHeight, innerHeight * 3.05);
+        const dur = 13000, t0 = performance.now();
+        await new Promise(done => {
+          const step = now => {
+            const k = Math.min(1, (now - t0) / dur);
+            scrollTo(0, end * ease(k));
+            k < 1 ? requestAnimationFrame(step) : done();
+          };
+          requestAnimationFrame(step);
+        });
+      })()
+    `).catch(() => {});
   });
 
   // 2. The instrument working. Long enough to catch leg events and a rollover,
