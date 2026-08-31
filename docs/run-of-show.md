@@ -130,3 +130,51 @@ so rather than showing stale numbers. Say "the venue is between markets, this is
 what it does when there is nothing to quote", and move to the explorer tab. An
 empty state you designed on purpose reads as competence. Hunting for data on
 camera does not.
+
+---
+
+# Filming it without a live screen recording
+
+You do not have to perform this live. The camera can be scripted, which removes
+mouse fumbling, wifi risk and retakes. **What is automated is the camera, not
+the content**: every frame is the real app, driven by the real engine, against
+real Somnia markets. Nothing is stubbed and no footage is synthesised.
+
+## The pipeline
+
+```bash
+npm run serve -- --live --short     # leave warm ~90s so activity fills
+npm run film                        # records 4 segments, ~2.5 min
+npm run film:cut                    # assembles film/cleave-silent.mp4
+# record narration on your Mac (Voice Memos or QuickTime)
+npm run film:voice -- ~/voice.m4a   # muxes it, cleaned and levelled
+```
+
+`film:voice` runs light denoise, a 90Hz high-pass, gentle compression and
+loudness normalisation to -16 LUFS, which is the streaming/broadcast target.
+Video is the master: audio is padded or trimmed so the two end together.
+
+## Narration windows
+
+Measured from an actual run. Pace to these rather than the 3:00 ideal above.
+
+| Segment | Length | What is on screen |
+|---|---|---|
+| `01-landing` | 22s | The claim and the live pair cost read from chain |
+| `02-instrument` | 78s | The loop quoting, leg events, rollovers |
+| `03-activity` | 23s | The log, where completion and refusal are legible |
+| `04-settlement` | 36s | The redeem transaction on the explorer |
+| **Total** | **2:40** | |
+
+## Two things to watch
+
+**The explorer is slow.** It takes ~14s to paint and ~22s to settle. The first
+filming run captured a blank white page because a 4s wait was not enough. Waits
+are content-based now, but if you re-film and the explorer is having a bad day,
+check that segment before assuming it worked.
+
+**A near-expiry market shows an atypical edge.** One run caught `30.8pp` because
+the market was 19 seconds from expiry and prices had diverged hard. It is real,
+but it is not representative, and narrating it as typical would be misleading.
+The honest figure to talk over is the usual **2 to 3 points**. If a run captures
+an outlier, re-film rather than explain it away.

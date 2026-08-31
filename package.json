@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Quote both sides of a prediction market while holding neither.",
+  "description": "Buy every outcome for less than one. Settlement pays exactly one.",
   "scripts": {
     "newkey": "tsx scripts/newkey.ts",
     "fund": "tsx scripts/fund.ts",
@@ -16,7 +16,10 @@
     "set": "tsx scripts/set.ts",
     "fill": "tsx scripts/fill.ts",
     "claim": "tsx scripts/claim.ts",
-    "serve": "tsx scripts/serve.ts"
+    "serve": "tsx scripts/serve.ts",
+    "film": "tsx scripts/film.ts",
+    "film:cut": "bash scripts/film-cut.sh",
+    "film:voice": "bash scripts/film-voice.sh"
   },
   "dependencies": {
     "@somnia-chain/markets-sdk": "0.27.0",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "playwright": "^1.62.1",
     "tsx": "^4",
     "typescript": "^5"
   }
