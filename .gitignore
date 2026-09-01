@@ -4,3 +4,6 @@ dist/
 .DS_Store
 .vercel
 film/
+
+# personal playbook, not part of the public repo
+DEMO-VIDEO-PLAYBOOK.md
