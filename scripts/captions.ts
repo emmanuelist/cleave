@@ -100,7 +100,9 @@ export const CAPTION_RUNTIME = `
     #__cap.beat .__cap-t{color:#4fd1c5;}
   \`;
   document.head.appendChild(css);
-  document.body.appendChild(wrap);
+  // Outside body: body carries the zoom transform, and a transformed ancestor
+  // becomes the containing block for position:fixed descendants.
+  document.documentElement.appendChild(wrap);
   const el = wrap.querySelector('.__cap-t');
   // Sentences run back to back, so the caption SWAPS text and stays up. An
   // independent hide timer per cue meant the previous cue's hide fired after
